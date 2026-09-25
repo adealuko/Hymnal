@@ -7,6 +7,7 @@
 <meta name="description" content="Classic hymns in English and Yorùbá to read, sing, and share.">
 <meta name="theme-color" content="#2F5D50">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="firebase-config.js"></script>
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,6 +127,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .banner{margin-top:.9rem;padding:.75rem .9rem;border:1px solid var(--gold);border-radius:8px}
 .banner p{margin:0;font-size:.92rem}
 .banner .addbtn{margin-top:.5rem}
+.account{margin:.8rem 0 0;font-size:.9rem;color:var(--muted)}
+.account[hidden]{display:none}
 .linkbtn{border:0;background:none;padding:0;color:var(--green);text-decoration:underline;font:inherit}
 .tb.danger{color:#A23B3B;border-color:#D9B5B5}
 .form{display:grid;gap:1.1rem;margin-top:1.5rem}
@@ -165,6 +168,7 @@ button{font:inherit;color:inherit;cursor:pointer}
       <button class="addbtn" id="addBtn" hidden>Add a hymn</button>
       <button class="addbtn" id="installBtn" hidden>Install app</button>
       <div class="banner" id="banner" hidden></div>
+      <p class="account" id="account" hidden></p>
     </div>
     <div class="search">
       <label for="q" class="sr" style="position:absolute;left:-9999px">Search hymns</label>
@@ -484,7 +488,7 @@ function openYoForm(h){
     <button class="back" id="back">All hymns</button>
     <p class="hnum">Hymn ${numOf(h)}</p>
     <h2>${y?"Edit Yoruba version":"Add Yoruba version"}</h2>
-    <p class="credit">${esc(h.title)}. ${mode==="team"?"Everyone who opens this hymnal will see this version when they switch to Yorùbá.":"This version will be saved on this device."}</p>
+    <p class="credit">${esc(h.title)}. ${mode==="team"?"Everyone who uses the hymnal will see this version when they switch to Yorùbá.":"This version will be saved on this device."}</p>
     <details class="ref"><summary>Show the English text for reference</summary><div class="refbody">${eng}</div></details>
     <div class="form">
       <label>Yoruba title<span class="hint">Optional. If left blank, the English title is used.</span><input id="yTitle" lang="yo" value="${y&&y.title?esc(y.title):""}" autocomplete="off"></label>
@@ -532,7 +536,7 @@ function openForm(h){
   $("#reader").innerHTML=`<div class="page">
     <button class="back" id="back">All hymns</button>
     <h2>${h?"Edit hymn":"Add a hymn"}</h2>
-    <p class="credit">${mode==="team"&&!(h&&h.device)?"Everyone who opens this hymnal will see this hymn under Added hymns.":"This hymn will be saved on this device and appear under Added hymns."}</p>
+    <p class="credit">${mode==="team"&&!(h&&h.device)?"Everyone who uses the hymnal will see this hymn under Added hymns.":"This hymn will be saved on this device and appear under Added hymns."}</p>
     <div class="form" id="form">
       <label>Title <span class="req">(required)</span><input id="fTitle" value="${h?esc(h.title):""}" autocomplete="off"></label>
       <div class="row">
@@ -573,7 +577,7 @@ function openForm(h){
     if(refrain.length) rec.refrain=refrain;
     const btn=$("#fSave"); btn.disabled=true; btn.textContent="Saving…";
     saveHymn(rec,h).then(()=>{ editing=null; renderChips(); open(rec.id); toast(h?"Changes saved.":"Hymn saved."); })
-      .catch(()=>{ btn.disabled=false; btn.textContent=h?"Save changes":"Save hymn"; $("#fErr").textContent="Couldn’t save the hymn. Check your connection and try again."; });
+      .catch(()=>{ btn.disabled=false; btn.textContent=h?"Save changes":"Save hymn"; $("#fErr").textContent="Couldn’t save the hymn. Check that you’re connected to the internet and signed in, then try again."; });
   };
 }
 
@@ -616,27 +620,94 @@ document.documentElement.lang = lang==="yo"?"yo":"en";
 renderChips(); renderList(); renderReader();
 
 /* Team sharing: hymns stored in the hymnal's shared database */
+const FB_VER="10.12.2";
+function loadScript(src){ return new Promise((ok,fail)=>{ const el=document.createElement("script"); el.src=src; el.onload=ok; el.onerror=fail; document.head.appendChild(el); }); }
+// Firestore can't hold lists inside lists, so stanzas are stored one text block per stanza.
+const toDb = r => { const o={...r}; if(o.stanzas) o.stanzas=o.stanzas.map(x=>x.join("\n")); if(o.refrain) o.refrain=o.refrain.join("\n"); return o; };
+const fromDb = r => { const o={...r}; if(Array.isArray(o.stanzas)) o.stanzas=o.stanzas.map(x=>Array.isArray(x)?x:String(x).split("\n")); if(typeof o.refrain==="string") o.refrain=o.refrain.split("\n"); return o; };
+function wrapFirestore(fs){
+  return { collection: p => ({
+    onSnapshot: (cb, err) => fs.collection(p).onSnapshot(snap => cb({docs: snap.docs.map(d => ({id:d.id, exists:true, data:()=>fromDb(d.data())}))}), err),
+    doc: id => ({
+      set: v => { if(!navigator.onLine) return Promise.reject(new Error("offline")); return fs.collection(p).doc(String(id)).set(toDb(v)); },
+      delete: () => { if(!navigator.onLine) return Promise.reject(new Error("offline")); return fs.collection(p).doc(String(id)).delete(); }
+    })
+  })};
+}
+let fbAuth=null, leader=null;
+function renderAccount(){
+  const el=$("#account"); if(!el) return;
+  if(mode!=="team" || !fbAuth){ el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML = leader
+    ? `Signed in as ${esc(leader.email)}. <button class="linkbtn" id="signOut">Sign out</button>`
+    : `<button class="linkbtn" id="signIn">Leader sign in</button>`;
+  if($("#signOut")) $("#signOut").onclick=()=>fbAuth.signOut().then(()=>toast("Signed out."));
+  if($("#signIn")) $("#signIn").onclick=openSignIn;
+}
+function openSignIn(){
+  editing={}; $("#app").classList.add("reading");
+  $("#reader").innerHTML=`<div class="page">
+    <button class="back" id="back">All hymns</button>
+    <h2>Leader sign in</h2>
+    <p class="credit">Leaders can add hymns and Yoruba versions that everyone using the app will see. Ask the hymnal’s administrator for an account.</p>
+    <div class="form">
+      <label>Email<input id="sEmail" type="email" autocomplete="username"></label>
+      <label>Password<input id="sPass" type="password" autocomplete="current-password"></label>
+      <p class="err" id="sErr" role="alert"></p>
+      <div class="toolbar" style="border:0;margin:0"><button class="tb primary" id="sGo">Sign in</button><button class="tb" id="sCancel">Cancel</button></div>
+    </div></div>`;
+  const cancel=()=>{editing=null; $("#app").classList.remove("reading"); renderReader();};
+  $("#back").onclick=cancel; $("#sCancel").onclick=cancel; $("#sEmail").focus();
+  $("#sGo").onclick=()=>{
+    const email=$("#sEmail").value.trim(), pass=$("#sPass").value;
+    if(!email||!pass){ $("#sErr").textContent="Enter your email and password to sign in."; return; }
+    if(!navigator.onLine){ $("#sErr").textContent="Connect to the internet to sign in."; return; }
+    $("#sGo").disabled=true; $("#sGo").textContent="Signing in…";
+    fbAuth.signInWithEmailAndPassword(email,pass).then(()=>{ cancel(); toast("Signed in. You can now add hymns."); })
+      .catch(()=>{ $("#sGo").disabled=false; $("#sGo").textContent="Sign in"; $("#sErr").textContent="That email and password didn’t match a leader account. Check them and try again."; });
+  };
+}
+function subscribe(){
+  db.collection("hymns").onSnapshot(snap=>{
+    shared = snap.docs.filter(x=>x.exists).map(x=>({...x.data(), id:x.id}));
+    renderChips(); renderList();
+    if(current && !editing){ const c=byId(current.id); if(c){current=c;renderReader();} }
+  },()=>{});
+  db.collection("yoruba").onSnapshot(snap=>{
+    const m={}; snap.docs.forEach(x=>{ if(x.exists) m[x.id]=x.data(); });
+    yoruba=m; renderChips(); renderList();
+    if(current && !editing) renderReader();
+  },()=>{});
+}
 (async function init(){
-  const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
-  const [d,u] = await Promise.all([use("db"),use("user")]);
-  if(d){
-    db=d; mode="team";
-    canAdd = u ? await u.canEdit().catch(()=>false) : false;
-    db.collection("hymns").onSnapshot(snap=>{
-      shared = snap.docs.filter(x=>x.exists).map(x=>({...x.data(), id:x.id}));
-      renderChips(); renderList();
-      if(current && !editing){ const c=byId(current.id); if(c){current=c;renderReader();} }
-    },()=>{});
-    db.collection("yoruba").onSnapshot(snap=>{
-      const m={}; snap.docs.forEach(x=>{ if(x.exists) m[x.id]=x.data(); });
-      yoruba=m; renderChips(); renderList();
-      if(current && !editing) renderReader();
-    },()=>{});
+  const cfg = window.FIREBASE_CONFIG;
+  if(cfg && cfg.projectId){
+    try{
+      const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+      await loadScript(base+"firebase-app-compat.js");
+      await Promise.all([loadScript(base+"firebase-firestore-compat.js"), loadScript(base+"firebase-auth-compat.js")]);
+      firebase.initializeApp(cfg);
+      const fs=firebase.firestore();
+      fs.settings({ignoreUndefinedProperties:true, merge:true});
+      await fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});   // keeps shared hymns available offline
+      db=wrapFirestore(fs); mode="team"; fbAuth=firebase.auth();
+      subscribe();
+      fbAuth.onAuthStateChanged(u=>{
+        leader=u; canAdd=!!u;
+        $("#addBtn").hidden=!canAdd; renderAccount(); renderBanner(); renderList();
+        if(current && !editing) renderReader();
+      });
+    }catch(e){ mode="local"; canAdd=true; }
   } else {
-    mode="local"; canAdd=true;
+    // Inside claude.ai the hymnal can use the artifact's shared storage instead.
+    const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
+    const [d,u] = await Promise.all([use("db"),use("user")]);
+    if(d){ db=d; mode="team"; canAdd = u ? await u.canEdit().catch(()=>false) : false; subscribe(); }
+    else { mode="local"; canAdd=true; }
   }
   $("#addBtn").hidden=!canAdd;
-  renderBanner(); renderList();
+  renderAccount(); renderBanner(); renderList();
 })();
 
 /* Installable app: offline support and the Install button */
