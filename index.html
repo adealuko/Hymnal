@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overcomers Hymnal</title>
+<meta name="description" content="Classic hymns in English and Yorùbá to read, sing, and share.">
+<meta name="theme-color" content="#2F5D50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF0EC; --leaf:#F8F9F6; --ink:#1C2440; --muted:#5B6275;
+  --gold:#A57F2F; --green:#2F5D50; --line:#D3D8D1; --sel:#DDE5DE;
+  --serif:"Alegreya", Georgia, "Times New Roman", serif;
+  --sans:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --lyric-size:1.3rem;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141A2C; --leaf:#1B2236; --ink:#E6E4DA; --muted:#A3A9B8;
+    --gold:#D2AE62; --green:#7FB5A3; --line:#2E3650; --sel:#26304A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141A2C; --leaf:#1B2236; --ink:#E6E4DA; --muted:#A3A9B8;
+  --gold:#D2AE62; --green:#7FB5A3; --line:#2E3650; --sel:#26304A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:1rem;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(260px,340px) 1fr;height:100%}
+/* Index */
+.index{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--paper)}
+.brand{padding:1.5rem 1.25rem 1rem}
+.brand h1{font-family:var(--serif);font-weight:500;font-size:2rem;margin:0;letter-spacing:.01em;line-height:1.1}
+.brand p{margin:.25rem 0 0;color:var(--muted);font-size:.95rem}
+.search{margin:0 1.25rem;position:relative}
+.search input{width:100%;padding:.65rem .8rem;border:1px solid var(--line);border-radius:8px;background:var(--leaf);color:var(--ink);font:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:.8rem 1.25rem}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:.2rem .7rem;font-size:.88rem;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--leaf)}
+.list{list-style:none;margin:0;padding:0 .5rem 1rem;overflow-y:auto;flex:1}
+.list button{display:grid;grid-template-columns:2.2rem 1fr auto;align-items:baseline;gap:.25rem;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:.6rem .75rem}
+.list button:hover{background:var(--sel)}
+.list button[aria-current="true"]{background:var(--sel)}
+.num{font-family:var(--serif);color:var(--gold);font-size:1rem}
+.t{font-family:var(--serif);font-size:1.1rem;line-height:1.25}
+.a{grid-column:2;color:var(--muted);font-size:.85rem}
+.star{color:var(--gold);font-size:.9rem}
+.empty{padding:1rem 1.5rem;color:var(--muted)}
+
+/* Reader */
+.reader{overflow-y:auto;min-height:0;background:var(--leaf)}
+.page{max-width:40rem;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+.back{display:none;border:0;background:none;color:var(--green);padding:0;margin-bottom:1rem;font-weight:500}
+.hnum{font-family:var(--serif);color:var(--gold);font-size:1.1rem}
+.page h2{font-family:var(--serif);font-weight:500;font-size:clamp(2rem,5vw,2.9rem);line-height:1.08;margin:.2rem 0 .5rem}
+.credit{color:var(--muted);margin:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.5rem 0 2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
+.tb{border:1px solid var(--line);background:var(--leaf);border-radius:8px;padding:.45rem .85rem;font-size:.95rem}
+.tb:hover{border-color:var(--muted)}
+.tb.primary{background:var(--green);border-color:var(--green);color:var(--leaf)}
+.tb[aria-pressed="true"]{color:var(--gold);border-color:var(--gold)}
+.sizer{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.sizer button{border:0;background:var(--leaf);padding:.45rem .8rem}
+.sizer button+button{border-left:1px solid var(--line)}
+
+.stanza{display:grid;grid-template-columns:2.4rem 1fr;margin:0 0 1.8rem}
+.stanza .n{font-family:var(--serif);color:var(--gold);font-size:calc(var(--lyric-size) * 1.05);line-height:1.6}
+.stanza p{margin:0;font-family:var(--serif);font-size:var(--lyric-size);line-height:1.6}
+.refrain{margin:-.6rem 0 1.8rem 2.4rem;padding-left:1rem;border-left:2px solid var(--gold)}
+.refrain p{margin:0;font-family:var(--serif);font-style:italic;font-size:var(--lyric-size);line-height:1.6;color:var(--ink)}
+.story{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line)}
+.story h3{font-family:var(--serif);font-weight:500;font-size:1.35rem;margin:0 0 .5rem}
+.story p{margin:0 0 .75rem;max-width:36rem}
+.facts{display:grid;grid-template-columns:max-content 1fr;gap:.3rem 1.2rem;margin:1rem 0 0;color:var(--muted);font-size:.95rem}
+.facts dt{color:var(--ink);font-weight:500}
+.facts dd{margin:0}
+
+/* Worship mode */
+.worship{position:fixed;inset:0;z-index:10;background:#10152A;color:#F1EEE4;display:none;flex-direction:column;
+  padding:calc(1.5rem + env(safe-area-inset-top,0px)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0px))}
+.worship.open{display:flex}
+.w-top{display:flex;justify-content:space-between;align-items:center;gap:1rem;font-size:1rem;color:#B9BCC8}
+.w-top button{background:none;border:1px solid #3A4262;color:#F1EEE4;border-radius:8px;padding:.4rem .9rem}
+.w-body{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;overflow:auto}
+.w-text{font-family:var(--serif);font-size:clamp(1.6rem,4.2vw,3.2rem);line-height:1.45;max-width:30ch}
+.w-text.is-refrain{font-style:italic;color:#E3C47F}
+.w-text p{margin:0}
+.w-nav{display:flex;justify-content:space-between;align-items:center}
+.w-nav button{background:none;border:1px solid #3A4262;color:#F1EEE4;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem}
+.w-nav button:disabled{opacity:.3;cursor:default}
+.dots{display:flex;gap:.4rem}
+.dots span{width:.5rem;height:.5rem;border-radius:50%;background:#3A4262}
+.dots span.on{background:#E3C47F}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .app.reading .index{display:none}
+  .app:not(.reading) .reader{display:none}
+  .index{border-right:0}
+  .back{display:inline-block}
+  .page{padding:1.5rem 1.25rem 4rem}
+  .stanza{grid-template-columns:1.8rem 1fr}
+  .refrain{margin-left:1.8rem}
+}
+@media (prefers-reduced-motion:no-preference){
+  .w-text{transition:opacity .25s ease}
+  .w-text.fade{opacity:0}
+}
+
+.addbtn{margin:.9rem 0 0;border:1px solid var(--green);color:var(--green);background:transparent;border-radius:8px;padding:.4rem .9rem;font-weight:500}
+.addbtn:hover{background:var(--green);color:var(--leaf)}
+.addbtn[hidden],.banner[hidden]{display:none}
+.banner{margin-top:.9rem;padding:.75rem .9rem;border:1px solid var(--gold);border-radius:8px}
+.banner p{margin:0;font-size:.92rem}
+.banner .addbtn{margin-top:.5rem}
+.linkbtn{border:0;background:none;padding:0;color:var(--green);text-decoration:underline;font:inherit}
+.tb.danger{color:#A23B3B;border-color:#D9B5B5}
+.form{display:grid;gap:1.1rem;margin-top:1.5rem}
+.form label{display:grid;gap:.3rem;font-weight:500}
+.form .row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form .row .short{max-width:9rem}
+.form .row:has(.short){grid-template-columns:1fr auto}
+.form input,.form textarea{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-weight:400}
+.form textarea{font-family:var(--serif);font-size:1.05rem;line-height:1.5;resize:vertical}
+.hint{font-weight:400;color:var(--muted);font-size:.9rem}
+.req{font-weight:400;color:var(--muted);font-size:.9rem}
+.err{color:#A23B3B;margin:0;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));transform:translate(-50%,1rem);background:var(--ink);color:var(--leaf);padding:.6rem 1.1rem;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:760px){.form .row,.form .row:has(.short){grid-template-columns:1fr}.form .row .short{max-width:none}}
+
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--leaf)}
+.brand .lang{margin-top:.9rem;display:flex;width:max-content}
+.lang button{border:0;background:transparent;padding:.4rem .85rem;font-size:.95rem;color:var(--muted)}
+.lang button+button{border-left:1px solid var(--line)}
+.lang button[aria-pressed="true"]{background:var(--green);color:var(--leaf)}
+.notice{border:1px solid var(--gold);border-radius:8px;padding:.8rem 1rem;margin:0 0 1.8rem}
+.notice p{margin:0 0 .5rem}
+.notice p:last-child{margin:0}
+.ref{margin:1.5rem 0 0;border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.ref summary{cursor:pointer;color:var(--green);font-weight:500}
+.refbody{margin-top:1rem;--lyric-size:1.05rem}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="index" aria-label="Hymn index">
+    <div class="brand">
+      <h1>Overcomers Hymnal</h1>
+      <p>Classic hymns to read, sing, and share.</p>
+      <div id="langSide"></div>
+      <button class="addbtn" id="addBtn" hidden>Add a hymn</button>
+      <button class="addbtn" id="installBtn" hidden>Install app</button>
+      <div class="banner" id="banner" hidden></div>
+    </div>
+    <div class="search">
+      <label for="q" class="sr" style="position:absolute;left:-9999px">Search hymns</label>
+      <input id="q" type="search" placeholder="Search titles, authors, or lyrics" autocomplete="off">
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by theme"></div>
+    <ul class="list" id="list"></ul>
+  </aside>
+  <main class="reader" id="reader" aria-live="polite"></main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="worship" id="worship" role="dialog" aria-modal="true" aria-label="Worship mode">
+  <div class="w-top"><span id="wTitle"></span><button id="wClose">Close</button></div>
+  <div class="w-body" id="wBody"><div class="w-text" id="wText"></div></div>
+  <div class="w-nav">
+    <button id="wPrev">Previous</button>
+    <div class="dots" id="wDots"></div>
+    <button id="wNext">Next</button>
+  </div>
+</div>
+
+<script>
+const HYMNS = [
+{id:1,title:"Amazing Grace",author:"John Newton",year:1779,tune:"NEW BRITAIN",scripture:"Ephesians 2:8",themes:["Grace","Testimony"],
+story:["John Newton was a slave-ship captain before his conversion. He later became an Anglican priest and a voice for abolition, and he wrote this hymn for a New Year's service in the village of Olney.","The final stanza, \u201cWhen we\u2019ve been there ten thousand years,\u201d came from an older hymn and was joined to Newton\u2019s text in the 1800s, made popular by Harriet Beecher Stowe\u2019s Uncle Tom\u2019s Cabin."],
+stanzas:[
+["Amazing grace! How sweet the sound","That saved a wretch like me!","I once was lost, but now am found;","Was blind, but now I see."],
+["\u2019Twas grace that taught my heart to fear,","And grace my fears relieved;","How precious did that grace appear","The hour I first believed."],
+["Through many dangers, toils, and snares,","I have already come;","\u2019Tis grace hath brought me safe thus far,","And grace will lead me home."],
+["The Lord has promised good to me,","His word my hope secures;","He will my shield and portion be,","As long as life endures."],
+["When we\u2019ve been there ten thousand years,","Bright shining as the sun,","We\u2019ve no less days to sing God\u2019s praise","Than when we\u2019d first begun."]]},
+{id:2,title:"Holy, Holy, Holy",author:"Reginald Heber",year:1826,tune:"NICAEA",scripture:"Revelation 4:8",themes:["Praise","Trinity"],
+story:["Reginald Heber, an English bishop who served in India, wrote this hymn for Trinity Sunday. It was published the year after his death.","John B. Dykes composed the tune in 1861 and named it after the Council of Nicaea, which affirmed the doctrine of the Trinity."],
+stanzas:[
+["Holy, holy, holy! Lord God Almighty!","Early in the morning our song shall rise to Thee;","Holy, holy, holy, merciful and mighty!","God in three Persons, blessed Trinity!"],
+["Holy, holy, holy! All the saints adore Thee,","Casting down their golden crowns around the glassy sea;","Cherubim and seraphim falling down before Thee,","Who wert, and art, and evermore shalt be."],
+["Holy, holy, holy! Though the darkness hide Thee,","Though the eye of sinful man Thy glory may not see;","Only Thou art holy; there is none beside Thee,","Perfect in power, in love, and purity."],
+["Holy, holy, holy! Lord God Almighty!","All Thy works shall praise Thy Name, in earth, and sky, and sea;","Holy, holy, holy; merciful and mighty!","God in three Persons, blessed Trinity!"]]},
+{id:3,title:"It Is Well with My Soul",author:"Horatio G. Spafford",year:1873,tune:"VILLE DU HAVRE",scripture:"Philippians 4:7",themes:["Comfort","Trust"],
+story:["Horatio Spafford wrote these words after his four daughters died when the ship Ville du Havre sank in the Atlantic. His wife survived and sent him a telegram that began \u201cSaved alone.\u201d","Philip Bliss wrote the music and named the tune after the ship."],
+refrain:["It is well with my soul,","It is well, it is well with my soul."],
+stanzas:[
+["When peace like a river attendeth my way,","When sorrows like sea billows roll;","Whatever my lot, Thou hast taught me to say,","It is well, it is well with my soul."],
+["Though Satan should buffet, though trials should come,","Let this blest assurance control,","That Christ has regarded my helpless estate,","And hath shed His own blood for my soul."],
+["My sin, oh, the bliss of this glorious thought!","My sin, not in part but the whole,","Is nailed to the cross, and I bear it no more,","Praise the Lord, praise the Lord, O my soul!"],
+["And Lord, haste the day when my faith shall be sight,","The clouds be rolled back as a scroll;","The trump shall resound, and the Lord shall descend,","Even so, it is well with my soul."]]},
+{id:4,title:"Be Thou My Vision",author:"Traditional Irish; tr. Mary Byrne, versified by Eleanor Hull",year:1912,tune:"SLANE",scripture:"Psalm 73:25\u201326",themes:["Devotion","Trust"],
+story:["The words come from an old Irish prayer. Mary Byrne translated it into English prose in 1905, and Eleanor Hull shaped it into verse in 1912.","The tune SLANE is an Irish folk melody named for the hill where, by tradition, St. Patrick lit an Easter fire in defiance of the High King."],
+stanzas:[
+["Be Thou my vision, O Lord of my heart;","Naught be all else to me, save that Thou art;","Thou my best thought, by day or by night,","Waking or sleeping, Thy presence my light."],
+["Be Thou my wisdom, and Thou my true word;","I ever with Thee and Thou with me, Lord;","Thou my great Father, I Thy true son;","Thou in me dwelling, and I with Thee one."],
+["Riches I heed not, nor man\u2019s empty praise,","Thou mine inheritance, now and always:","Thou and Thou only, first in my heart,","High King of heaven, my treasure Thou art."],
+["High King of heaven, my victory won,","May I reach heaven\u2019s joys, O bright heaven\u2019s Sun!","Heart of my own heart, whatever befall,","Still be my vision, O Ruler of all."]]},
+{id:5,title:"Rock of Ages",author:"Augustus M. Toplady",year:1776,tune:"TOPLADY",scripture:"Isaiah 26:4",themes:["Grace","Salvation"],
+story:["Augustus Toplady, an Anglican clergyman, published this hymn in The Gospel Magazine. A popular story says he took shelter in a cleft of rock during a storm, though that account is uncertain.","Thomas Hastings wrote the tune most American churches sing in 1830."],
+stanzas:[
+["Rock of Ages, cleft for me,","Let me hide myself in Thee;","Let the water and the blood,","From Thy wounded side which flowed,","Be of sin the double cure;","Save from wrath and make me pure."],
+["Not the labors of my hands","Can fulfill Thy law\u2019s demands;","Could my zeal no respite know,","Could my tears forever flow,","All for sin could not atone;","Thou must save, and Thou alone."],
+["Nothing in my hand I bring,","Simply to the cross I cling;","Naked, come to Thee for dress;","Helpless, look to Thee for grace;","Foul, I to the fountain fly;","Wash me, Savior, or I die."],
+["While I draw this fleeting breath,","When mine eyes shall close in death,","When I soar to worlds unknown,","See Thee on Thy judgment throne,","Rock of Ages, cleft for me,","Let me hide myself in Thee."]]},
+{id:6,title:"A Mighty Fortress Is Our God",author:"Martin Luther; tr. Frederick H. Hedge",year:1853,tune:"EIN FESTE BURG",scripture:"Psalm 46:1",themes:["Trust","Praise"],
+story:["Martin Luther wrote both words and music around 1529, drawing on Psalm 46. It became known as the battle hymn of the Reformation.","Frederick Hedge\u2019s 1853 English translation is the one most often sung in North America."],
+stanzas:[
+["A mighty fortress is our God,","A bulwark never failing;","Our helper He, amid the flood","Of mortal ills prevailing:","For still our ancient foe","Doth seek to work us woe;","His craft and power are great,","And, armed with cruel hate,","On earth is not his equal."],
+["Did we in our own strength confide,","Our striving would be losing;","Were not the right Man on our side,","The Man of God\u2019s own choosing:","Dost ask who that may be?","Christ Jesus, it is He;","Lord Sabaoth His name,","From age to age the same,","And He must win the battle."],
+["And though this world, with devils filled,","Should threaten to undo us,","We will not fear, for God hath willed","His truth to triumph through us:","The Prince of Darkness grim,","We tremble not for him;","His rage we can endure,","For lo, his doom is sure,","One little word shall fell him."],
+["That word above all earthly powers,","No thanks to them, abideth;","The Spirit and the gifts are ours","Through Him who with us sideth:","Let goods and kindred go,","This mortal life also;","The body they may kill:","God\u2019s truth abideth still,","His kingdom is forever."]]},
+{id:7,title:"Blessed Assurance",author:"Fanny J. Crosby",year:1873,tune:"ASSURANCE",scripture:"Hebrews 10:22",themes:["Testimony","Praise"],
+story:["Phoebe Knapp played a new melody for her friend Fanny Crosby and asked what it said. Crosby answered with the first line on the spot.","Crosby was blind from infancy and wrote more than 8,000 hymns in her lifetime."],
+refrain:["This is my story, this is my song,","Praising my Savior all the day long;","This is my story, this is my song,","Praising my Savior all the day long."],
+stanzas:[
+["Blessed assurance, Jesus is mine!","O what a foretaste of glory divine!","Heir of salvation, purchase of God,","Born of His Spirit, washed in His blood."],
+["Perfect submission, perfect delight,","Visions of rapture now burst on my sight;","Angels descending bring from above","Echoes of mercy, whispers of love."],
+["Perfect submission, all is at rest;","I in my Savior am happy and blest,","Watching and waiting, looking above,","Filled with His goodness, lost in His love."]]},
+{id:8,title:"What a Friend We Have in Jesus",author:"Joseph M. Scriven",year:1855,tune:"CONVERSE",scripture:"Philippians 4:6",themes:["Prayer","Comfort"],
+story:["Joseph Scriven, an Irishman who emigrated to Canada, wrote this poem to comfort his mother back home. He never meant it to be published.","Charles C. Converse set it to music in 1868."],
+stanzas:[
+["What a friend we have in Jesus,","All our sins and griefs to bear!","What a privilege to carry","Everything to God in prayer!","O what peace we often forfeit,","O what needless pain we bear,","All because we do not carry","Everything to God in prayer!"],
+["Have we trials and temptations?","Is there trouble anywhere?","We should never be discouraged;","Take it to the Lord in prayer.","Can we find a friend so faithful","Who will all our sorrows share?","Jesus knows our every weakness;","Take it to the Lord in prayer."],
+["Are we weak and heavy laden,","Cumbered with a load of care?","Precious Savior, still our refuge\u2014","Take it to the Lord in prayer.","Do thy friends despise, forsake thee?","Take it to the Lord in prayer!","In His arms He\u2019ll take and shield thee;","Thou wilt find a solace there."]]},
+{id:9,title:"Abide with Me",author:"Henry F. Lyte",year:1847,tune:"EVENTIDE",scripture:"Luke 24:29",themes:["Comfort","Evening"],
+story:["Henry Lyte wrote this hymn while dying of tuberculosis, weeks before he left his parish in Devon for the last time.","William H. Monk composed the tune in 1861. The hymn is still sung at the FA Cup Final in England."],
+stanzas:[
+["Abide with me; fast falls the eventide;","The darkness deepens; Lord, with me abide.","When other helpers fail and comforts flee,","Help of the helpless, O abide with me."],
+["Swift to its close ebbs out life\u2019s little day;","Earth\u2019s joys grow dim; its glories pass away;","Change and decay in all around I see;","O Thou who changest not, abide with me."],
+["I need Thy presence every passing hour.","What but Thy grace can foil the tempter\u2019s power?","Who, like Thyself, my guide and stay can be?","Through cloud and sunshine, Lord, abide with me."],
+["I fear no foe, with Thee at hand to bless;","Ills have no weight, and tears no bitterness.","Where is death\u2019s sting? Where, grave, thy victory?","I triumph still, if Thou abide with me."],
+["Hold Thou Thy cross before my closing eyes;","Shine through the gloom and point me to the skies.","Heaven\u2019s morning breaks, and earth\u2019s vain shadows flee;","In life, in death, O Lord, abide with me."]]},
+{id:10,title:"Come, Thou Fount of Every Blessing",author:"Robert Robinson",year:1758,tune:"NETTLETON",scripture:"1 Samuel 7:12",themes:["Grace","Devotion"],
+story:["Robert Robinson wrote this hymn at 22, a few years after his conversion under the preaching of George Whitefield.","\u201cHere I raise my Ebenezer\u201d refers to the stone Samuel set up, saying \u201cHitherto hath the Lord helped us.\u201d"],
+stanzas:[
+["Come, Thou Fount of every blessing,","Tune my heart to sing Thy grace;","Streams of mercy, never ceasing,","Call for songs of loudest praise.","Teach me some melodious sonnet,","Sung by flaming tongues above.","Praise the mount! I\u2019m fixed upon it,","Mount of Thy redeeming love."],
+["Here I raise my Ebenezer;","Hither by Thy help I\u2019m come;","And I hope, by Thy good pleasure,","Safely to arrive at home.","Jesus sought me when a stranger,","Wandering from the fold of God;","He, to rescue me from danger,","Interposed His precious blood."],
+["O to grace how great a debtor","Daily I\u2019m constrained to be!","Let Thy goodness, like a fetter,","Bind my wandering heart to Thee.","Prone to wander, Lord, I feel it,","Prone to leave the God I love;","Here\u2019s my heart, O take and seal it,","Seal it for Thy courts above."]]},
+{id:11,title:"Joyful, Joyful, We Adore Thee",author:"Henry van Dyke",year:1907,tune:"HYMN TO JOY",scripture:"Psalm 98:4",themes:["Praise","Creation"],
+story:["Henry van Dyke wrote these words while visiting Williams College, inspired by the Berkshire Mountains.","He wrote them to be sung to the \u201cOde to Joy\u201d melody from Beethoven\u2019s Ninth Symphony."],
+stanzas:[
+["Joyful, joyful, we adore Thee,","God of glory, Lord of love;","Hearts unfold like flowers before Thee,","Opening to the sun above.","Melt the clouds of sin and sadness;","Drive the dark of doubt away;","Giver of immortal gladness,","Fill us with the light of day!"],
+["All Thy works with joy surround Thee,","Earth and heaven reflect Thy rays,","Stars and angels sing around Thee,","Center of unbroken praise.","Field and forest, vale and mountain,","Flowery meadow, flashing sea,","Singing bird and flowing fountain","Call us to rejoice in Thee."],
+["Thou art giving and forgiving,","Ever blessing, ever blest,","Wellspring of the joy of living,","Ocean depth of happy rest!","Thou our Father, Christ our Brother,","All who live in love are Thine;","Teach us how to love each other,","Lift us to the joy divine."],
+["Mortals, join the happy chorus,","Which the morning stars began;","Father love is reigning o\u2019er us,","Brother love binds man to man.","Ever singing, march we onward,","Victors in the midst of strife,","Joyful music leads us sunward","In the triumph song of life."]]}
+];
+
+const CYA = [{"id": 12, "title": "Immortal, Invisible, God Only Wise", "author": "Walter Chalmers Smith", "year": 1867, "tune": "ST. DENIO", "scripture": "1 Timothy 1:17", "themes": ["Praise"], "story": ["Walter Chalmers Smith, a minister of the Free Church of Scotland, built this hymn on Paul’s words: “Now unto the King eternal, immortal, invisible, the only wise God.”", "It is usually sung to ST. DENIO, a Welsh folk melody."], "stanzas": [["Immortal, invisible, God only wise,", "In light inaccessible hid from our eyes,", "Most blessed, most glorious, the Ancient of Days,", "Almighty, victorious, Thy great name we praise."], ["Unresting, unhasting, and silent as light,", "Nor wanting, nor wasting, Thou rulest in might;", "Thy justice like mountains high soaring above", "Thy clouds which are fountains of goodness and love."], ["To all life Thou givest, to both great and small;", "In all life Thou livest, the true life of all;", "We blossom and flourish as leaves on the tree,", "And wither and perish, but nought changeth Thee."], ["Great Father of Glory, pure Father of Light", "Thine angels adore Thee, all veiling their sight;", "All laud we would render, O help us to see:", "’Tis only the splendor of light hideth Thee."], ["Immortal, invisible, God only wise,", "In light inaccessible hid from our eyes,", "Most blessed, most glorious, the Ancient of Days,", "Almighty, victorious, Thy great name we praise"]], "collection": "CYA"}, {"id": 13, "title": "Praise to the Lord, the Almighty", "author": "Joachim Neander; tr. Catherine Winkworth", "year": 1863, "tune": "LOBE DEN HERREN", "scripture": "Psalm 103:1", "themes": ["Praise"], "story": ["Joachim Neander, a German teacher and poet, published this hymn in 1680, shortly before he died at age 30.", "Catherine Winkworth’s 1863 translation brought it into English hymnals."], "stanzas": [["Praise to the Lord, the Almighty, the King of creation!", "O my soul, praise Him, for He is thy health and salvation!", "All ye who hear, now to His temple draw near;", "Join me in glad adoration!"], ["Praise to the Lord, who o’er all things so wondrously reigneth,", "Shelters thee under His wings, yea, so gently sustaineth!", "Hast thou not seen how thy desires e’er have been", "Granted in what He ordaineth?"], ["Praise to the Lord, who doth prosper thy work and defend thee;", "Surely His goodness and mercy here daily attend thee.", "Ponder anew what the Almighty can do,", "If with His love He befriend thee."], ["Praise to the Lord, O let all that is in me adore Him!", "All that hath life and breath, come now with praises before Him.", "Let the Amen sound from His people again,", "Gladly for aye we adore Him."]], "collection": "CYA"}, {"id": 14, "title": "I Am Thine, O Lord", "author": "Fanny J. Crosby", "year": 1875, "tune": "I AM THINE (William H. Doane)", "scripture": "James 4:8", "themes": ["Devotion"], "story": ["Fanny Crosby wrote these words after an evening talking with composer William Doane about the nearness of God. Doane set them to music the next day."], "stanzas": [["I am Thine, O Lord, I have heard Thy voice,", "And it told Thy love to me;", "But I long to rise in the arms of faith,", "And be closer drawn to Thee."], ["Consecrate me now to Thy service, Lord,", "By the pow’r of grace divine;", "Let my soul look up with a steadfast hope,", "And my will be lost in Thine."], ["Oh, the pure delight of a single hour", "That before Thy throne I spend,", "When I kneel in prayer, and with Thee, my God,", "I commune as friend with friend!"], ["There are depths of love that I cannot know", "Till I cross the narrow sea;", "There are heights of joy that I may not reach", "Till I rest in peace with Thee."]], "collection": "CYA", "refrain": ["Draw me nearer, nearer, nearer, blessed Lord,", "To the cross where Thou hast died;", "Draw me nearer, nearer, nearer, blessed Lord,", "To Thy precious, bleeding side."]}, {"id": 15, "title": "Jesus, Keep Me Near the Cross", "author": "Fanny J. Crosby", "year": 1869, "tune": "NEAR THE CROSS (William H. Doane)", "scripture": "Galatians 6:14", "themes": ["Devotion", "Salvation"], "story": ["As with many of her hymns, Fanny Crosby wrote these words to fit a melody William Doane had already composed."], "stanzas": [["Jesus, keep me near the cross", "There a precious fountain;", "Free to all, a healing stream,", "Flows from Calv'ry's mountain."], ["Near the cross, a trembling soul,", "Love and mercy found me;", "There the Bright and Morning Star", "Shed His beams around me."], ["Near the cross! O lamb of God,", "Bring its scenes before me;", "Help me walk from day to day", "With its shadow o'er me."], ["Near the cross! I'll watch and wait,", "Hoping, trusting ever;", "Till I reach the golden strand,", "Just beyond the river."]], "collection": "CYA", "refrain": ["In the cross, in the cross", "Be my glory ever,", "Till my ransomed soul shall find", "Rest beyond the river."]}, {"id": 16, "title": "Battle Hymn of the Republic", "author": "Julia Ward Howe", "year": 1861, "tune": "BATTLE HYMN", "scripture": "Isaiah 63:3", "themes": ["Praise"], "story": ["Julia Ward Howe wrote these words in a single night in Washington, D.C., after visiting Union army camps during the American Civil War.", "She set them to the tune of a popular camp song, which is why the refrain repeats “Glory, glory, hallelujah.”"], "stanzas": [["Mine eyes have seen the glory of the coming of the Lord;", "He is trampling out the vintage where the grapes of wrath are stored;", "he hath loosed the fateful lightning of his terrible swift sword;", "his truth is marching on."], ["I have seen him in the watchfires of a hundred circling camps,", "they have builded him an altar in the evening dews and damps;", "I can read his righteous sentence by the dim and flaring lamps;", "his day is marching on."], ["He has sounded forth the trumpet that shall never call retreat;", "he is sifting out the hearts of all before his judgment seat.", "O be swift, my soul, to answer him; be jubilant, my feet!", "Our God is marching on."], ["In the beauty of the lilies Christ was born across the sea,", "with a glory in his bosom that transfigures you and me;", "as he died to make us holy, let us die to make all free,", "while God is marching on."]], "collection": "CYA", "refrain": ["Glory, glory, hallelujah!", "Glory, glory, hallelujah!", "Glory, glory, hallelujah!", "His truth is marching on."]}, {"id": 17, "title": "Higher Ground", "author": "Johnson Oatman Jr.", "year": 1898, "tune": "HIGHER GROUND (Charles H. Gabriel)", "scripture": "Philippians 3:14", "themes": ["Devotion"], "story": ["Johnson Oatman Jr. was a businessman and Methodist lay preacher who wrote thousands of gospel song texts. Charles Gabriel, one of the busiest gospel composers of his day, wrote the music."], "stanzas": [["I'm pressing on the upward way,", "New heights I'm gaining every day;", "Still praying as I onward bound,", "Lord, plant my feet on higher ground."], ["My heart has no desire to stay", "Where doubts arise and fears dismay;", "Tho' some may dwell where these abound,", "My pray'r, my aim is higher ground."], ["I want to live above the world,", "Though Satan's darts at me are hurled;", "For faith has caught the joyful sound,", "The song of saints on higher ground."], ["I want to scale the utmost height,", "And catch a gleam of glory bright;", "But still I'll pray till Heav'n I've found,", "Lord, lead me on to higher ground."]], "collection": "CYA", "refrain": ["Lord, lift me up and let me stand,", "By faith, on Heaven's table land;", "A higher plane than I have found;", "Lord, plant my feet on higher ground."]}, {"id": 18, "title": "The Grand Old Song", "author": "Attributed to Fanny J. Crosby", "year": "1880s", "tune": "", "scripture": "Psalm 98:1", "themes": ["Praise", "Heaven"], "story": ["A joyful gospel song from the late 1800s, built around the repeated response “Glory to God, hallelujah!”"], "stanzas": [["We are never, never weary of the grand old song;", "Glory to God, hallelujah!", "We can sing it loud as ever, with our faith more strong;", "Glory to God, hallelujah!"], ["We are lost amid the rapture of redeeming love", "Glory to God, hallelujah!", "We are rising on its pinions to the hills above:", "Glory to God, hallelujah!"], ["We are going to a palace that is built of gold;", "Glory to God, hallelujah!", "Where the King in all His splendor we shall soon behold", "Glory to God, hallelujah!"], ["There we’ll shout redeeming mercy in a glad, new song;", "Glory to God, hallelujah!", "There we’ll sing the praise of Jesus with the blood washed throng;", "Glory to God, hallelujah!"]], "collection": "CYA", "refrain": ["O, the children of the Lord have a right to shout and sing,", "For the way is growing bright, and our souls are on the wing;", "We are going by and by to the palace of a King!", "Glory to God, hallelujah!"]}, {"id": 19, "title": "My Faith Looks Up to Thee", "author": "Ray Palmer", "year": 1830, "tune": "OLIVET (Lowell Mason)", "scripture": "Hebrews 12:2", "themes": ["Trust", "Prayer"], "story": ["Ray Palmer wrote this prayer in a notebook at age 21, while working as a teacher in New York. Lowell Mason found it two years later and wrote the tune OLIVET for it."], "stanzas": [["My faith looks up to Thee,", "Thou Lamb of Calvary,", "Savior divine!", "Now hear me while I pray,", "take all my guilt away;", "O let me from this day", "be wholly Thine."], ["May Thy rich grace impart", "strength to my fainting heart,", "my zeal inspire;", "as Thou hast died for me,", "O may my love to Thee", "pure, warm, and changeless be,", "a living fire."], ["While life’s dark maze I tread,", "and griefs around me spread,", "be Thou my Guide;", "bid darkness turn to day,", "wipe sorrow’s tears away,", "nor let me ever stray", "from Thee aside."], ["When ends life's transient dream,", "when death’s cold, sullen stream", "shall o'er me roll,", "blest Savior, then in love,", "fear and distrust remove;", "O bear me safe above,", "a ransomed soul."]], "collection": "CYA"}, {"id": 20, "title": "Sweet Hour of Prayer", "author": "William W. Walford", "year": 1845, "tune": "SWEET HOUR (William B. Bradbury)", "scripture": "Philippians 4:6", "themes": ["Prayer"], "story": ["The words are traditionally credited to William Walford, an English preacher. They first appeared in an American newspaper in 1845, and William Bradbury later set them to music."], "stanzas": [["Sweet hour of prayer! sweet hour of prayer!", "that calls me from a world of care,", "and bids me at my Father's throne", "make all my wants and wishes known.", "In seasons of distress and grief,", "my soul has often found relief,", "and oft escaped the tempter's snare", "by thy return, sweet hour of prayer!"], ["Sweet hour of prayer! sweet hour of prayer!", "the joys I feel, the bliss I share", "of those whose anxious spirits burn", "with strong desires for thy return!", "With such I hasten to the place", "where God my Savior shows his face,", "and gladly take my station there,", "and wait for thee, sweet hour of prayer!"], ["Sweet hour of prayer! sweet hour of prayer!", "thy wings shall my petition bear", "to him whose truth and faithfulness", "engage the waiting soul to bless.", "And since he bids me seek his face,", "believe his word, and trust his grace,", "I'll cast on him my every care,", "and wait for thee, sweet hour of prayer!"]], "collection": "CYA"}, {"id": 21, "title": "I Need Thee Every Hour", "author": "Annie S. Hawks", "year": 1872, "tune": "NEED (Robert Lowry)", "scripture": "John 15:5", "themes": ["Prayer", "Trust"], "story": ["Annie Hawks, a Brooklyn homemaker, wrote these lines one morning as she went about her housework. Her pastor, Robert Lowry, set them to music and added the refrain."], "stanzas": [["I need Thee ev'ry hour,", "most gracious Lord;", "no tender voice like Thine", "can peace afford."], ["I need Thee ev'ry hour,", "stay Thou nearby;", "temptations lose their pow'r", "when Thou art nigh."], ["I need Thee ev'ry hour,", "in joy or pain;", "come quickly and abide,", "or life is vain."], ["I need Thee ev'ry hour,", "teach me Thy will;", "and Thy rich promises", "in me fulfill."], ["I need Thee ev'ry hour,", "most Holy One;", "O make me Thine indeed,", "Thou blessed Son."]], "collection": "CYA", "refrain": ["I need Thee, O I need Thee;", "ev'ry hour I need Thee;", "O bless me now, my Savior,", "I come to Thee."]}, {"id": 22, "title": "My Life, My Love I Give to Thee", "author": "Ralph E. Hudson", "year": 1882, "tune": "Ralph E. Hudson", "scripture": "Romans 14:8", "themes": ["Devotion", "Service"], "story": ["Ralph Hudson, an American gospel singer and publisher, wrote both the words and the music of this consecration hymn."], "stanzas": [["My life, my love, I give to Thee,", "Thou Lamb of God who died for me;", "Oh, may I ever faithful be,", "My Savior and my God!"], ["The world and all its joys I leave;", "My life, O Lord, Thou wilt receive;", "Henceforth no more Thyself I’ll grieve,", "My Savior and my God!"], ["O Thou who died on Calvary,", "To save my soul and make me free,", "That I may ever live for Thee", "My Savior and my God!"]], "collection": "CYA", "refrain": ["I’ll live for Him who died for me,", "How happy then my life shall be!", "I’ll live for Him who died for me,", "My Savior and my God!"]}, {"id": 23, "title": "All Hail the Power of Jesus’ Name", "author": "Edward Perronet", "year": 1779, "tune": "CORONATION (Oliver Holden)", "scripture": "Revelation 19:16", "themes": ["Praise"], "story": ["Edward Perronet, an English preacher who worked with John and Charles Wesley, wrote this hymn of Christ’s kingship.", "In North America it is most often sung to CORONATION, written in 1793 by Oliver Holden, a carpenter from Massachusetts."], "stanzas": [["All hail the power of Jesus' name!", "Let angels prostrate fall.", "Bring forth the royal diadem,", "and crown him Lord of all.", "Bring forth the royal diadem,", "and crown him Lord of all!"], ["O seed of Israel's chosen race", "now ransomed from the fall,", "hail him who saves you by his grace,", "and crown him Lord of all.", "Hail him who saves you by his grace,", "and crown him Lord of all!"], ["Let every tongue and every tribe", "responsive to his call,", "to him all majesty ascribe,", "and crown him Lord of all.", "To him all majesty ascribe,", "and crown him Lord of all!"], ["Oh, that with all the sacred throng", "we at his feet may fall!", "We'll join the everlasting song", "and crown him Lord of all.", "We'll join the everlasting song", "and crown him Lord of all."]], "collection": "CYA"}, {"id": 24, "title": "My Faith Has Found a Resting Place", "author": "Lidie H. Edmunds", "year": 1891, "tune": "LANDÅS", "scripture": "Hebrews 7:25", "themes": ["Trust", "Salvation"], "story": ["The tune LANDÅS is a Norwegian folk melody, arranged by William J. Kirkpatrick."], "stanzas": [["My faith has found a resting place,", "Not in device nor creed;", "I trust the Ever-living One,", "His wounds for me shall plead."], ["Enough for me that Jesus saves,", "This ends my fear and doubt;", "A sinful soul I come to Him,", "He'll never cast me out."], ["My heart is leaning on the Word,", "The written Word of God,", "Salvation by my Savior's name,", "Salvation through His blood."], ["My great Physician heals the sick,", "The lost He came to save;", "For me His precious blood He shed,", "For me His life He gave"]], "collection": "CYA", "refrain": ["I need no other argument,", "I need no other plea;", "It is enough that Jesus died,", "And that He died for me."]}, {"id": 25, "title": "Deeper, Deeper", "author": "Charles P. Jones", "year": 1900, "tune": "Charles P. Jones", "scripture": "Ephesians 3:17–19", "themes": ["Devotion"], "story": ["Charles Price Jones was a Baptist pastor in Mississippi who helped found the Church of Christ (Holiness) USA. He wrote both words and music."], "stanzas": [["Deeper, deeper in the love of Jesus", "Daily let me go;", "Higher, higher in the school of wisdom,", "More of grace to know."], ["Deeper, deeper, blessed Holy Spirit,", "Take me deeper still,", "Till my life is wholly lost in Jesus,", "And His perfect will."], ["Deeper, deeper! though it cost hard trials,", "Deeper let me go!", "Rooted in the holy love of Jesus,", "Let me fruitful grow."], ["Deeper, higher, every day in Jesus,", "Till all conflict past,", "Finds me conqu’ror, and in His own image", "Perfected at last."], ["Deeper, deeper in the faith of Jesus,", "Holy faith and true;", "In His pow’r and soul exulting wisdom", "Let me peace pursue"]], "collection": "CYA", "refrain": ["Oh, deeper yet, I pray,", "And higher every day,", "And wiser, blessed Lord,", "In Thy precious, holy Word."]}, {"id": 26, "title": "It Pays to Serve Jesus", "author": "Frank C. Huston", "year": 1909, "tune": "Frank C. Huston", "scripture": "Joshua 24:15", "themes": ["Service", "Testimony"], "story": ["Frank Huston, an American evangelist and songwriter, wrote both the words and the music."], "stanzas": [["It pays to serve Jesus, I speak from my heart;", "He’ll always be with us, if we do our part;", "There’s naught in this wide world can pleasure afford,", "There’s peace and contentment in serving the Lord."], ["And oft when I’m tempted to turn from the track,", "I think of my Saviour - my mind wanders back", "To the place where they nailed Him on Calvary’s tree -", "I hear a voice saying, I suffered for thee."], ["There’s a place that remembrance still brings back to me,", "’Twas there I found pardon - ’twas Heaven to me;", "There Jesus spoke sweetly to my weary soul,", "My sins were forgiven, He made my heart whole."], ["How rich is the blessing the world cannot give,", "I’m satisfied fully for Jesus to live;", "Tho’ friends may forsake me, and trials arise,", "I’m trusting in Jesus, His love never dies."]], "collection": "CYA", "refrain": ["I love Him far better than in days of yore,", "I’ll serve Him more truly than ever before;", "I’ll do as He bids me, whatever the cost,", "I’ll be a true soldier - I’ll die at my post."]}, {"id": 27, "title": "To the Work", "author": "Fanny J. Crosby", "year": 1869, "tune": "TOILING ON (William H. Doane)", "scripture": "Ecclesiastes 9:10", "themes": ["Service"], "story": ["A call to active service, written by Fanny Crosby for a tune by her frequent partner William Doane."], "stanzas": [["To the work! to the work! we are servants of God,", "Let us follow the path that our Master has trod;", "With the balm of His counsel our strength to renew,", "Let us do with our might what our hands find to do."], ["To the work! to the work! let the hungry be fed;", "To the fountain of life let the weary be led;", "In the cross and its banner our glory shall be,", "While we herald the tidings, \"Salvation is free!\""], ["To the work! to the work! there is labour for all;", "For the kingdom of darkness and error shall fall;", "And the name of Jehovah exalted shall be,", "In the loud-swelling chorus, \"Salvation is free!\""], ["To the work! to the work! in the strength of the Lord,", "And a robe and a crown shall our labour reward;", "When the home of the faithful our dwelling shall be,", "And we shout with the ransomed, \"Salvation is free!\""]], "collection": "CYA", "refrain": ["Toiling on, toiling on,", "Toiling on, toiling on:", "Let us hope, let us watch,", "And labour till the Master comes."]}, {"id": 28, "title": "Oh, I Want to See Him", "author": "Rufus H. Cornelius", "year": 1916, "tune": "Rufus H. Cornelius", "scripture": "1 John 3:2", "themes": ["Heaven", "Testimony"], "story": ["Rufus Cornelius, an American pastor, wrote both the words and the music of this gospel song about longing to see Christ face to face."], "stanzas": [["As I journey through the land singing as I go,", "Pointing souls to Calvary– to the crimson flow,", "Many arrows pierce my soul from without, within;", "But my Lord leads me on, through Him I must win."], ["When in service for my Lord dark may be the night,", "But I'll cling more close to Him, He will give me light;", "Satan's snares may vex my soul, turn my thoughts aside;", "But my Lord goes ahead, leads whate'er betide."], ["When in valleys low I look toward the mountain height,", "And behold my Savior there, leading in the fight,", "With a tender hand outstretched toward the valley low,", "Guiding me, I can see as I onward go."], ["When before me billows rise from the mighty deep,", "Then my Lord directs my bark; He doth safely keep,", "And He leads me gently on through this world below;", "He's a real friend to me, oh, I love Him so."]], "collection": "CYA", "refrain": ["Oh, I want to see Him, look upon His face,", "There to sing forever of His saving grace;", "On the streets of Glory let me lift my voice;", "Cares all past, home at last, ever to rejoice."]}, {"id": 29, "title": "O for a Thousand Tongues to Sing", "author": "Charles Wesley", "year": 1739, "tune": "AZMON", "scripture": "Psalm 145:21", "themes": ["Praise"], "story": ["Charles Wesley wrote this hymn to mark the first anniversary of his conversion. It was later placed first in the Methodist hymnal."], "stanzas": [["O for a thousand tongues to sing", "My great Redeemer’s praise", "The glories of my God and King", "The triumphs of His grace"], ["My gracious Master and my God", "Assist me to proclaim", "To spread through all the earth abroad", "The honors of Thy name"], ["Jesus! the name that calms our fears", "That bids our sorrows cease", "’Tis music in the sinner’s ears", "’Tis life, and health, and peace"], ["He breaks the power of canceled sin", "He sets the prisoner free", "His blood can make the foulest clean", "His blood availed for me"], ["He speaks, and listening to His voice", "New life the dead receive", "The mournful, broken hearts rejoice", "The humble poor believe"], ["Hear Him, ye deaf; His praise, ye dumb", "Your loosened tongues employ", "Ye blind, behold your Savior come", "And leap, ye lame, for joy"]], "collection": "CYA"}, {"id": 30, "title": "Great Is Thy Faithfulness", "author": "Thomas O. Chisholm", "year": 1923, "tune": "FAITHFULNESS (William M. Runyan)", "scripture": "Lamentations 3:22–23", "themes": ["Trust", "Praise"], "story": ["Thomas Chisholm said no single event inspired this hymn. He wrote it from a lifetime of noticing God’s faithfulness in ordinary days."], "stanzas": [["Great is Thy faithfulness, O God my Father", "There is no shadow of turning with Thee", "Thou changest not, Thy compassions they fail not", "As Thou hast been, Thou forever will be"], ["Summer and winter, and springtime and harvest", "Sun, moon, and stars in their courses above", "Join with all nature in manifold witness", "To Thy great faithfulness, mercy, and love"], ["Pardon for sin and a peace that endureth", "Thy own dear presence to cheer and to guide", "Strength for today and bright hope for tomorrow", "Blessings all mine, with ten thousand beside"]], "collection": "CYA", "refrain": ["Great is Thy faithfulness", "Great is Thy faithfulness", "Morning by morning new mercies I see", "All I have needed Thy hand hath provided", "Great is Thy faithfulness, Lord, unto me"]}, {"id": 31, "title": "O Worship the King", "author": "Robert Grant", "year": 1833, "tune": "LYONS", "scripture": "Psalm 104:1", "themes": ["Praise", "Creation"], "story": ["Sir Robert Grant, a British member of Parliament and later Governor of Bombay, based this hymn on Psalm 104."], "stanzas": [["O worship the King, all-glorious above", "O gratefully sing His power and His love", "Our Shield and Defender, the Ancient of Days", "Pavilioned in splendor, and girded with praise"], ["O tell of His might, O sing of His grace", "Whose robe is the light, whose canopy space", "His chariots of wrath the deep thunderclouds form", "And dark is His path on the wings of the storm"], ["The earth with its store of wonders untold", "Almighty, Thy power hath founded of old", "Hath stablished it fast by a changeless decree", "And round it hath cast, like a mantle, the sea"], ["Thy bountiful care, what tongue can recite", "It breathes in the air, it shines in the light", "It streams from the hills, it descends to the plain", "And sweetly distills in the dew and the rain"], ["Frail children of dust, and feeble as frail", "In Thee do we trust, nor find Thee to fail", "Thy mercies, how tender, how firm to the end", "Our Maker, Defender, Redeemer, and Friend"]], "collection": "CYA"}, {"id": 32, "title": "Praise Him! Praise Him!", "author": "Fanny J. Crosby", "year": 1869, "tune": "Chester G. Allen", "scripture": "Psalm 150:6", "themes": ["Praise"], "story": ["Fanny Crosby wrote these words for music by Chester Allen. It remains one of her best-loved hymns of praise."], "stanzas": [["Praise Him! praise Him! Jesus, our blessed Redeemer!", "Sing, ye saints! His wonderful love proclaim!", "Hail Him! hail Him! mightiest angels in glory;", "Strength and honor give to His holy name!", "Like a shepherd, Jesus will feed His people,", "In His arms He carries them all day long;", "O ye saints that live in the light of His presence,", "Praise Him! praise Him! ever in joyful song!"], ["Praise Him! praise Him! Jesus, our blessed Redeemer,", "For our sins He suffered and bled and died;", "He, our Rock, our Hope of eternal salvation,", "Hail Him! hail Him! Jesus, the Crucified;", "Loving Savior, meekly enduring sorrow,", "Crowned with thorns that cruelly pierced His brow;", "Once for us rejected, despised, and forsaken,", "Prince of Glory, ever triumphant now."], ["Praise Him! praise Him! Jesus, our blessed Redeemer,", "Heavenly portals, loud with hosannahs ring!", "Jesus, Savior, reigneth for ever and ever;", "Crown Him! crown Him! Prophet and Priest and King!", "Death is vanquished! Tell it with joy, ye faithful,", "Where is now thy victory, boasting grave?", "Jesus lives! No longer thy portals are cheerless;", "Jesus lives, the mighty and strong to save."]], "collection": "CYA"}, {"id": 33, "title": "More About Jesus", "author": "Eliza E. Hewitt", "year": 1887, "tune": "SWENEY (John R. Sweney)", "scripture": "2 Peter 3:18", "themes": ["Devotion"], "story": ["Eliza Hewitt, a Philadelphia schoolteacher, wrote many hymns during a long recovery from a spinal injury. This one reflects her love of studying scripture."], "stanzas": [["More about Jesus would I know,", "more of His grace to others show;", "more of His saving fullness see,", "more of His love who died for me."], ["More about Jesus let me learn,", "more of His holy will discern.", "Spirit of God, my Teacher be,", "showing the things of Christ to me."], ["More about Jesus in His Word,", "holding communion with my Lord,", "hearing His voice in ev'ry line,", "making each faithful saying mine."], ["More about Jesus on His throne,", "riches in glory all His own;", "more of His kingdom's sure increase;", "more of His coming, Prince of Peace."]], "collection": "CYA", "refrain": ["More, more about Jesus;", "more, more about Jesus;", "more of His saving fullness see,", "more of His love who died for me."]}, {"id": 34, "title": "Breathe on Me, Breath of God", "author": "Edwin Hatch", "year": 1878, "tune": "TRENTHAM (Robert Jackson)", "scripture": "John 20:22", "themes": ["Holy Spirit", "Prayer"], "story": ["Edwin Hatch was an Oxford scholar of early church history. This short prayer is the hymn he is best remembered for."], "stanzas": [["Breathe on me, breath of God,", "Fill me with life anew,", "That I may love what Thou dost love,", "And do what Thou wouldst do."], ["Breathe on me, breath of God,", "Until my heart is pure,", "Until with Thee I will one will,", "To do and to endure."], ["Breathe on me, breath of God,", "Till I am wholly Thine,", "Till all this earthly part of me", "Glows with Thy fire divine."], ["Breathe on me, breath of God,", "So shall I never die,", "But live with Thee the perfect life", "Of Thine eternity."]], "collection": "CYA"}, {"id": 35, "title": "Just As I Am", "author": "Charlotte Elliott", "year": 1835, "tune": "WOODWORTH (William B. Bradbury)", "scripture": "John 6:37", "themes": ["Invitation", "Grace"], "story": ["Charlotte Elliott, who lived with a long illness, wrote this hymn when she felt she could do nothing useful for God.", "It became widely known as the invitation hymn at Billy Graham’s crusades."], "stanzas": [["Just as I am, without one plea,", "but that thy blood was shed for me,", "and that thou bidd'st me come to thee,", "O Lamb of God, I come, I come."], ["Just as I am, and waiting not", "to rid my soul of one dark blot,", "to thee, whose blood can cleanse each spot,", "O Lamb of God, I come, I come."], ["Just as I am, though tossed about", "with many a conflict, many a doubt,", "fightings and fears within, without,", "O Lamb of God, I come, I come."], ["Just as I am, thou wilt receive,", "wilt welcome, pardon, cleanse, relieve;", "because thy promise I believe,", "O Lamb of God, I come, I come."]], "collection": "CYA"}, {"id": 36, "title": "Lord, I Want to Be a Christian", "author": "African American spiritual", "year": "19th century", "tune": "Traditional", "scripture": "Psalm 51:10", "themes": ["Devotion", "Prayer"], "story": ["This spiritual comes from the tradition of enslaved African Americans in the American South. Each stanza changes one phrase, which makes it easy to learn and sing together."], "stanzas": [["Lord, I want to be a Christian", "in my heart, in my heart.", "Lord, I want to be a Christian in my heart.", "In my heart, in my heart,", "Lord, I want to be a Christian in my heart."], ["Lord, I want to be more loving", "in my heart, in my heart.", "Lord, I want to be more loving in my heart.", "In my heart, in my heart,", "Lord, I want to be more loving in my heart."], ["Lord, I want to be more holy", "in my heart, in my heart.", "Lord, I want to be more holy in my heart.", "In my heart, in my heart,", "Lord, I want to be more holy in my heart."], ["Lord, I want to be like Jesus", "in my heart, in my heart.", "Lord, I want to be like Jesus in my heart.", "In my heart, in my heart,", "Lord, I want to be like Jesus in my heart."]], "collection": "CYA"}, {"id": 37, "title": "Since Jesus Came Into My Heart", "author": "Rufus H. McDaniel", "year": 1914, "tune": "McDANIEL (Charles H. Gabriel)", "scripture": "2 Corinthians 5:17", "themes": ["Testimony"], "story": ["Rufus McDaniel, an Ohio minister, wrote this hymn after the death of his son, finding comfort in the joy and change Christ had brought to his life."], "stanzas": [["What a wonderful change in my life has been wrought", "since Jesus came into my heart!", "I have light in my soul for which long I had sought,", "since Jesus came into my heart."], ["I have ceased from my wand'ring and going astray", "since Jesus came into my heart!", "And my sins which were many are all washed away,", "since Jesus came into my heart."], ["I'm possessed of a hope that is steadfast and sure,", "since Jesus came into my heart!", "And no dark clouds of doubt now my pathway obscure,", "since Jesus came into my heart."], ["There's a light in the valley of death now for me,", "since Jesus came into my heart;", "And the gates of the city beyond I can see,", "since Jesus came into my heart."], ["I shall go there to dwell in that city I know,", "since Jesus came into my heart;", "And I'm happy, so happy, as onward I go,", "since Jesus came into my heart."]], "collection": "CYA", "refrain": ["Since Jesus came into my heart,", "since Jesus came into my heart,", "floods of joy o'er my soul like sea billows roll,", "since Jesus came into my heart."]}];
+HYMNS.push(...CYA);
+
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+};
+const BUILTIN = HYMNS.length;
+let local = store.get("hymnal-mine",[]);   // hymns saved only in this browser
+let shared = [];                             // hymns everyone with the link sees
+let db = null, mode = "starting", canAdd = false, sharing = false;
+let lang = store.get("hymnal-lang","en");        // "en" or "yo"
+let yoruba = store.get("hymnal-yoruba",{});      // hymn id -> {title, stanzas, refrain}
+const fold = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const yo = h => yoruba[String(h.id)];
+// The text to show for a hymn in the chosen language (English when no Yoruba version exists)
+function view(h){
+  const y = lang==="yo" && yo(h);
+  return y ? {title:y.title||h.title, stanzas:y.stanzas, refrain:y.refrain, yo:true} : {title:h.title, stanzas:h.stanzas, refrain:h.refrain, yo:false};
+}
+function langSwitch(id){
+  return `<div class="lang" role="group" aria-label="Language" id="${id}">
+    <button data-lang="en" aria-pressed="${lang==="en"}">English</button><button data-lang="yo" aria-pressed="${lang==="yo"}">Yorùbá</button></div>`;
+}
+function setLang(l){ lang=l; store.set("hymnal-lang",l); document.documentElement.lang = l==="yo"?"yo":"en";
+  $("#langSide").outerHTML = langSwitch("langSide"); bindLang("#langSide"); renderList(); if(!editing) renderReader(); }
+function bindLang(sel){ const el=$(sel); if(el) el.onclick=e=>{const b=e.target.closest("button[data-lang]"); if(b && b.dataset.lang!==lang) setLang(b.dataset.lang)}; }
+async function saveYoruba(id, rec){
+  if(mode==="team"){ rec ? await db.collection("yoruba").doc(String(id)).set(rec) : await db.collection("yoruba").doc(String(id)).delete(); }
+  if(rec) yoruba[String(id)]=rec; else delete yoruba[String(id)];
+  if(mode!=="team") store.set("hymnal-yoruba",yoruba);
+}
+let favs = new Set(store.get("hymnal-favs",[]).map(String));
+let size = store.get("hymnal-size",1.3);
+let filter = "All", query = "", current = null, editing = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+document.documentElement.style.setProperty("--lyric-size", size+"rem");
+
+function all(){
+  const extra = shared.slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).map(h=>({...h,shared:true}))
+    .concat(local.map(h=>({...h,device:true})));
+  return HYMNS.concat(extra.map((h,i)=>({...h, mine:true, num:BUILTIN+i+1})));
+}
+const numOf = h => h.num || h.id;
+const byId = id => all().find(h=>String(h.id)===String(id));
+function saveLocal(){ if(!store.set("hymnal-mine",local)) toast("Couldn’t save. Your phone may be out of storage space."); }
+const clean = h => { const {mine,num,shared:_s,device,...rest}=h; return JSON.parse(JSON.stringify(rest)); };
+async function saveHymn(rec, prev){
+  if(mode==="team" && !(prev && prev.device)){
+    await db.collection("hymns").doc(rec.id).set(clean(rec));
+    shared = shared.filter(x=>x.id!==rec.id).concat([rec]);
+  } else {
+    local = prev ? local.map(x=>x.id===rec.id?rec:x) : local.concat([rec]); saveLocal();
+  }
+}
+async function deleteHymn(h){
+  if(h.shared){ await db.collection("hymns").doc(h.id).delete(); shared=shared.filter(x=>x.id!==h.id); }
+  else { local=local.filter(x=>x.id!==h.id); saveLocal(); }
+}
+async function shareLocal(){
+  if(sharing||!local.length) return; sharing=true; renderBanner();
+  let n=0;
+  try{
+    for(const h of local.slice()){
+      const rec={...h, createdAt:h.createdAt||Date.now()+n};
+      await db.collection("hymns").doc(rec.id).set(clean(rec));
+      shared=shared.filter(x=>x.id!==rec.id).concat([rec]);
+      local=local.filter(x=>x.id!==h.id); saveLocal(); n++;
+    }
+    toast(n===1?"1 hymn shared with your team.":`${n} hymns shared with your team.`);
+  }catch(e){ toast("Some hymns couldn’t be shared. Check your connection and try again."); }
+  sharing=false; renderBanner(); renderList(); if(current) {current=byId(current.id); if(current) renderReader();}
+}
+function renderBanner(){
+  const b=$("#banner");
+  if(mode==="team" && canAdd && local.length){
+    b.hidden=false;
+    b.innerHTML=`<p>${local.length===1?"1 hymn you added is":local.length+" hymns you added are"} saved only on this device.</p>
+      <button class="addbtn" id="shareLocal" ${sharing?"disabled":""}>${sharing?"Sharing…":"Share with your team"}</button>`;
+    $("#shareLocal").onclick=shareLocal;
+  } else { b.hidden=true; b.innerHTML=""; }
+}
+
+function themeList(){
+  return ["All","Favorites","CYA sheet","Added hymns","Has Yorùbá",...[...new Set(all().flatMap(h=>h.themes||[]))].sort()];
+}
+function renderChips(){
+  const ts=themeList(); if(!ts.includes(filter)) filter="All";
+  $("#chips").innerHTML = ts.map(t=>`<button class="chip" aria-pressed="${t===filter}" data-t="${esc(t)}">${esc(t)}</button>`).join("");
+}
+$("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;filter=b.dataset.t;renderChips();renderList()});
+
+function matches(h){
+  if(filter==="Favorites" && !favs.has(String(h.id))) return false;
+  if(filter==="CYA sheet" && h.collection!=="CYA") return false;
+  if(filter==="Added hymns" && !h.mine) return false;
+  if(filter==="Has Yorùbá" && !yo(h)) return false;
+  if(!["All","Favorites","CYA sheet","Added hymns","Has Yorùbá"].includes(filter) && !(h.themes||[]).includes(filter)) return false;
+  if(!query) return true;
+  const y=yo(h)||{};
+  const hay=fold([h.title,h.author||"",h.stanzas.flat().join(" "),(h.refrain||[]).join(" "),y.title||"",(y.stanzas||[]).flat().join(" "),(y.refrain||[]).join(" ")].join(" "));
+  return hay.includes(fold(query));
+}
+function renderList(){
+  const items = all().filter(matches);
+  if(!items.length){
+    let msg="No hymns match. Try a different word or theme.";
+    if(!query && filter==="Has Yorùbá") msg = canAdd ? "No Yoruba versions yet. Open a hymn, switch to Yorùbá, and add one." : "No Yoruba versions have been added yet.";
+    if(!query && filter==="Favorites") msg="No favorites yet. Open a hymn and select Add to favorites.";
+    if(!query && filter==="Added hymns") msg= canAdd ? `No hymns added yet. <button class="linkbtn" id="emptyAdd">Add a hymn</button>` : "No hymns have been added yet.";
+    $("#list").innerHTML = `<li class="empty">${msg}</li>`;
+    const ea=$("#emptyAdd"); if(ea) ea.onclick=()=>openForm(null);
+    return;
+  }
+  $("#list").innerHTML = items.map(h=>{
+    const sub=[h.author?esc(String(h.author).split(";")[0]):"",h.year?esc(h.year):""].filter(Boolean).join(", ");
+    const v=view(h);
+    const tag = lang==="yo" ? (v.yo ? "" : " \u2013 English only") : "";
+    return `<li><button data-id="${esc(h.id)}" aria-current="${!!current&&String(current.id)===String(h.id)&&!editing}">
+    <span class="num">${numOf(h)}</span><span class="t"${v.yo?' lang="yo"':""}>${esc(v.title)}</span><span class="star">${favs.has(String(h.id))?"\u2605":""}</span>
+    <span class="a">${h.mine?(h.device?"On this device only":"Added by your team")+(sub?", "+sub:""):sub}${tag}</span></button></li>`}).join("");
+}
+$("#list").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(b)open(b.dataset.id)});
+$("#q").addEventListener("input",e=>{query=e.target.value.trim().toLowerCase();renderList()});
+$("#addBtn").onclick=()=>openForm(null);
+
+function open(id){
+  current = byId(id); editing=null;
+  $("#app").classList.add("reading");
+  renderReader(); renderList();
+  $("#reader").scrollTop=0;
+}
+function renderReader(){
+  const h=current;
+  if(!h){
+    const today=HYMNS[(Math.floor(Date.now()/864e5))%HYMNS.length];
+    $("#reader").innerHTML=`<div class="page"><p class="hnum">Hymn for today</p><h2>${esc(today.title)}</h2>
+      <p class="credit">${esc(today.author)}, ${esc(today.year)}</p>
+      <div class="stanza" style="margin-top:2rem"><span class="n">1</span><p>${today.stanzas[0].map(esc).join("<br>")}</p></div>
+      <div class="toolbar" style="border:0"><button class="tb primary" id="openToday">Read the full hymn</button></div></div>`;
+    $("#openToday").onclick=()=>open(today.id);
+    return;
+  }
+  const fav=favs.has(String(h.id));
+  const v=view(h);
+  let body="";
+  if(lang==="yo" && !v.yo){
+    body+=`<div class="notice"><p>This hymn doesn’t have a Yoruba version yet, so it’s shown in English.</p>
+      ${canAdd?`<button class="tb" id="addYo">Add Yoruba version</button>`:""}</div>`;
+  }
+  v.stanzas.forEach((s,i)=>{
+    body+=`<div class="stanza"><span class="n">${i+1}</span><p>${s.map(esc).join("<br>")}</p></div>`;
+    if(v.refrain && i===0) body+=`<div class="refrain" aria-label="${v.yo?"Ègbè":"Refrain"}"><p>${v.refrain.map(esc).join("<br>")}</p></div>`;
+  });
+  const credit=[h.author,h.year].filter(Boolean).map(esc).join(", ");
+  const facts=[h.tune?`<dt>Tune</dt><dd>${esc(h.tune)}</dd>`:"",h.scripture?`<dt>Scripture</dt><dd>${esc(h.scripture)}</dd>`:"",
+    (h.themes&&h.themes.length)?`<dt>Themes</dt><dd>${h.themes.map(esc).join(", ")}</dd>`:""].join("");
+  const story=(h.story&&h.story.length)||facts?`<section class="story">${h.story&&h.story.length?`<h3>The story behind it</h3>${h.story.map(p=>`<p>${esc(p)}</p>`).join("")}`:`<h3>Details</h3>`}
+      ${facts?`<dl class="facts">${facts}</dl>`:""}</section>`:"";
+  $("#reader").innerHTML=`<article class="page">
+    <button class="back" id="back">All hymns</button>
+    <p class="hnum">Hymn ${numOf(h)}${h.mine?(h.device?" \u2013 on this device only":" \u2013 added by your team"):""}</p>
+    <h2${v.yo?' lang="yo"':""}>${esc(v.title)}</h2>
+    ${v.yo?`<p class="credit">${esc(h.title)}</p>`:""}
+    ${credit?`<p class="credit">${credit}</p>`:""}
+    <div class="toolbar">
+      ${langSwitch("langReader")}
+      <button class="tb primary" id="worshipBtn">Start worship mode</button>
+      <button class="tb" id="favBtn" aria-pressed="${fav}">${fav?"\u2605 In favorites":"Add to favorites"}</button>
+      <div class="sizer" role="group" aria-label="Text size">
+        <button id="smaller" aria-label="Smaller text">A\u2212</button><button id="bigger" aria-label="Larger text">A+</button>
+      </div>
+      ${h.mine&&(canAdd||h.device)?`<button class="tb" id="editBtn">Edit</button><button class="tb danger" id="delBtn">Delete</button>`:""}
+      ${canAdd&&v.yo?`<button class="tb" id="editYo">Edit Yoruba version</button>`:""}
+    </div>
+    ${body}
+    ${v.refrain?`<p class="credit" style="font-size:.9rem;margin-left:2.4rem">${v.yo?"Kọ ègbè lẹ́yìn ẹsẹ kọ̀ọ̀kan.":"Sing the refrain after each stanza."}</p>`:""}
+    ${story}</article>`;
+  $("#back").onclick=()=>{$("#app").classList.remove("reading")};
+  $("#favBtn").onclick=()=>{const k=String(h.id);favs.has(k)?favs.delete(k):favs.add(k);store.set("hymnal-favs",[...favs]);renderReader();renderList()};
+  $("#smaller").onclick=()=>setSize(-0.1);
+  $("#bigger").onclick=()=>setSize(0.1);
+  $("#worshipBtn").onclick=startWorship;
+  bindLang("#langReader");
+  if($("#addYo")) $("#addYo").onclick=()=>openYoForm(h);
+  if($("#editYo")) $("#editYo").onclick=()=>openYoForm(h);
+  if($("#editBtn")){
+    $("#editBtn").onclick=()=>openForm(h);
+    const d=$("#delBtn");
+    d.onclick=()=>{
+      if(d.dataset.confirm){
+        d.disabled=true;
+        deleteHymn(h).then(()=>{ if(yo(h)) saveYoruba(h.id,null).catch(()=>{});
+        favs.delete(String(h.id)); store.set("hymnal-favs",[...favs]);
+        current=null; $("#app").classList.remove("reading"); renderChips(); renderList(); renderReader(); toast("Hymn deleted.");
+        }).catch(()=>{d.disabled=false;toast("Couldn’t delete the hymn. Check your connection and try again.")});
+      } else { d.dataset.confirm="1"; d.textContent="Select again to delete"; setTimeout(()=>{if(d.isConnected){delete d.dataset.confirm;d.textContent="Delete"}},4000); }
+    };
+  }
+}
+function setSize(d){size=Math.min(2.2,Math.max(1,+(size+d).toFixed(2)));store.set("hymnal-size",size);document.documentElement.style.setProperty("--lyric-size",size+"rem")}
+
+/* Add / edit the Yoruba version of any hymn */
+function openYoForm(h){
+  const y=yo(h);
+  editing = h;
+  $("#app").classList.add("reading");
+  const eng = h.stanzas.map((s,i)=>`<div class="stanza"><span class="n">${i+1}</span><p>${s.map(esc).join("<br>")}</p></div>`).join("")
+    + (h.refrain?`<div class="refrain"><p>${h.refrain.map(esc).join("<br>")}</p></div>`:"");
+  $("#reader").innerHTML=`<div class="page">
+    <button class="back" id="back">All hymns</button>
+    <p class="hnum">Hymn ${numOf(h)}</p>
+    <h2>${y?"Edit Yoruba version":"Add Yoruba version"}</h2>
+    <p class="credit">${esc(h.title)}. ${mode==="team"?"Everyone who opens this hymnal will see this version when they switch to Yorùbá.":"This version will be saved on this device."}</p>
+    <details class="ref"><summary>Show the English text for reference</summary><div class="refbody">${eng}</div></details>
+    <div class="form">
+      <label>Yoruba title<span class="hint">Optional. If left blank, the English title is used.</span><input id="yTitle" lang="yo" value="${y&&y.title?esc(y.title):""}" autocomplete="off"></label>
+      <label>Stanzas (Ẹsẹ) <span class="req">(required)</span>
+        <span class="hint">Put each line on its own line. Leave a blank line between stanzas. Tone marks and dotted letters (ẹ, ọ, ṣ) are kept exactly as typed.</span>
+        <textarea id="yStanzas" lang="yo" rows="14">${y?esc(y.stanzas.map(s=>s.join("\n")).join("\n\n")):""}</textarea></label>
+      <label>Refrain (Ègbè)<span class="hint">Optional.</span>
+        <textarea id="yRefrain" lang="yo" rows="5">${y&&y.refrain?esc(y.refrain.join("\n")):""}</textarea></label>
+      <p class="err" id="yErr" role="alert"></p>
+      <div class="toolbar" style="border:0;margin:0">
+        <button class="tb primary" id="ySave">${y?"Save changes":"Save Yoruba version"}</button>
+        <button class="tb" id="yCancel">Cancel</button>
+        ${y?`<button class="tb danger" id="yDel">Delete Yoruba version</button>`:""}
+      </div>
+    </div></div>`;
+  $("#reader").scrollTop=0;
+  const cancel=()=>{ editing=null; open(h.id); };
+  $("#back").onclick=cancel; $("#yCancel").onclick=cancel;
+  $("#ySave").onclick=()=>{
+    const stanzas=$("#yStanzas").value.replace(/\r/g,"").split(/\n\s*\n/).map(b=>toLines(b)).filter(b=>b.length)
+      .map(b=>{b[0]=b[0].replace(/^\(?\d+[.)]?\s+/,"");return b});
+    const refrain=toLines($("#yRefrain").value.replace(/^(chorus|refrain|ègbè|egbe)\s*:?\s*/i,""));
+    if(!stanzas.length){ $("#yErr").textContent="Add at least one stanza to save the Yoruba version."; $("#yStanzas").focus(); return; }
+    const rec={title:$("#yTitle").value.trim().normalize("NFC"), stanzas:stanzas.map(s=>s.map(l=>l.normalize("NFC"))), updatedAt:Date.now()};
+    if(refrain.length) rec.refrain=refrain.map(l=>l.normalize("NFC"));
+    const btn=$("#ySave"); btn.disabled=true; btn.textContent="Saving…";
+    saveYoruba(h.id,rec).then(()=>{ editing=null; if(lang!=="yo") setLang("yo"); renderChips(); open(h.id); toast("Yoruba version saved."); })
+      .catch(()=>{ btn.disabled=false; btn.textContent=y?"Save changes":"Save Yoruba version"; $("#yErr").textContent="Couldn’t save. Check your connection and try again."; });
+  };
+  const del=$("#yDel");
+  if(del) del.onclick=()=>{
+    if(!del.dataset.confirm){ del.dataset.confirm="1"; del.textContent="Select again to delete"; return; }
+    del.disabled=true;
+    saveYoruba(h.id,null).then(()=>{ editing=null; renderChips(); open(h.id); toast("Yoruba version deleted."); })
+      .catch(()=>{ del.disabled=false; toast("Couldn’t delete. Check your connection and try again."); });
+  };
+}
+
+/* Add / edit your own hymn */
+const toLines = s => s.split("\n").map(l=>l.trim()).filter(Boolean);
+function openForm(h){
+  editing = h || {};
+  $("#app").classList.add("reading");
+  const stz = h ? h.stanzas.map(s=>s.join("\n")).join("\n\n") : "";
+  $("#reader").innerHTML=`<div class="page">
+    <button class="back" id="back">All hymns</button>
+    <h2>${h?"Edit hymn":"Add a hymn"}</h2>
+    <p class="credit">${mode==="team"&&!(h&&h.device)?"Everyone who opens this hymnal will see this hymn under Added hymns.":"This hymn will be saved on this device and appear under Added hymns."}</p>
+    <div class="form" id="form">
+      <label>Title <span class="req">(required)</span><input id="fTitle" value="${h?esc(h.title):""}" autocomplete="off"></label>
+      <div class="row">
+        <label>Writer<input id="fAuthor" value="${h&&h.author?esc(h.author):""}" autocomplete="off"></label>
+        <label class="short">Year<input id="fYear" value="${h&&h.year?esc(h.year):""}" autocomplete="off" inputmode="numeric"></label>
+      </div>
+      <label>Stanzas <span class="req">(required)</span>
+        <span class="hint">Put each line on its own line. Leave a blank line between stanzas. Numbers like “2.” at the start are removed automatically.</span>
+        <textarea id="fStanzas" rows="14">${esc(stz)}</textarea></label>
+      <label>Refrain or chorus<span class="hint">Optional. In worship mode it shows after each stanza.</span>
+        <textarea id="fRefrain" rows="5">${h&&h.refrain?esc(h.refrain.join("\n")):""}</textarea></label>
+      <div class="row">
+        <label>Themes<span class="hint">Optional, separated by commas, such as Praise, Prayer.</span><input id="fThemes" value="${h&&h.themes?esc(h.themes.join(", ")):""}" autocomplete="off"></label>
+        <label>Scripture<span class="hint">Optional.</span><input id="fScripture" value="${h&&h.scripture?esc(h.scripture):""}" autocomplete="off"></label>
+      </div>
+      <p class="err" id="fErr" role="alert"></p>
+      <div class="toolbar" style="border:0;margin:0">
+        <button class="tb primary" id="fSave">${h?"Save changes":"Save hymn"}</button>
+        <button class="tb" id="fCancel">Cancel</button>
+      </div>
+    </div></div>`;
+  $("#reader").scrollTop=0;
+  $("#fTitle").focus();
+  const cancel=()=>{ editing=null; if(h){open(h.id)} else {$("#app").classList.remove("reading"); renderReader(); renderList()} };
+  $("#back").onclick=cancel; $("#fCancel").onclick=cancel;
+  $("#fSave").onclick=()=>{
+    const title=$("#fTitle").value.trim();
+    const stanzas=$("#fStanzas").value.replace(/\r/g,"").split(/\n\s*\n/)
+      .map(b=>toLines(b)).filter(b=>b.length)
+      .map(b=>{b[0]=b[0].replace(/^\(?\d+[.)]?\s+/,"");return b});
+    const refrain=toLines($("#fRefrain").value.replace(/^(chorus|refrain)\s*:?\s*/i,""));
+    if(!title){ $("#fErr").textContent="Add a title to save this hymn."; $("#fTitle").focus(); return; }
+    if(!stanzas.length){ $("#fErr").textContent="Add at least one stanza to save this hymn."; $("#fStanzas").focus(); return; }
+    const rec={id:h?h.id:"m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,createdAt:h&&h.createdAt?h.createdAt:Date.now(),
+      author:$("#fAuthor").value.trim(),year:$("#fYear").value.trim(),
+      themes:$("#fThemes").value.split(",").map(t=>t.trim()).filter(Boolean),
+      scripture:$("#fScripture").value.trim(),stanzas};
+    if(refrain.length) rec.refrain=refrain;
+    const btn=$("#fSave"); btn.disabled=true; btn.textContent="Saving…";
+    saveHymn(rec,h).then(()=>{ editing=null; renderChips(); open(rec.id); toast(h?"Changes saved.":"Hymn saved."); })
+      .catch(()=>{ btn.disabled=false; btn.textContent=h?"Save changes":"Save hymn"; $("#fErr").textContent="Couldn’t save the hymn. Check your connection and try again."; });
+  };
+}
+
+let toastT;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+
+/* Worship mode: one stanza per screen, refrain after each */
+let slides=[], si=0, lastFocus=null;
+function startWorship(){
+  const h=current, v=view(h); slides=[];
+  v.stanzas.forEach(s=>{slides.push({lines:s}); if(v.refrain) slides.push({lines:v.refrain,refrain:true})});
+  $("#wText").lang = v.yo ? "yo" : "en";
+  si=0; lastFocus=document.activeElement;
+  $("#wTitle").textContent=v.title;
+  $("#worship").classList.add("open");
+  drawSlide(); $("#wNext").focus();
+  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+}
+function drawSlide(){
+  const t=$("#wText"), s=slides[si];
+  t.classList.add("fade");
+  setTimeout(()=>{t.innerHTML=`<p>${s.lines.map(esc).join("<br>")}</p>`;t.classList.toggle("is-refrain",!!s.refrain);t.classList.remove("fade")},120);
+  $("#wPrev").disabled=si===0; $("#wNext").disabled=si===slides.length-1;
+  $("#wDots").innerHTML=slides.map((_,i)=>`<span class="${i===si?"on":""}"></span>`).join("");
+}
+function step(d){const n=si+d;if(n<0||n>=slides.length)return;si=n;drawSlide()}
+function closeWorship(){$("#worship").classList.remove("open");if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});lastFocus&&lastFocus.focus()}
+$("#wNext").onclick=()=>step(1); $("#wPrev").onclick=()=>step(-1);
+$("#wBody").onclick=()=>step(1); $("#wClose").onclick=closeWorship;
+document.addEventListener("keydown",e=>{
+  if(!$("#worship").classList.contains("open"))return;
+  if(["ArrowRight","ArrowDown"," ","PageDown"].includes(e.key)){e.preventDefault();step(1)}
+  else if(["ArrowLeft","ArrowUp","PageUp"].includes(e.key)){e.preventDefault();step(-1)}
+  else if(e.key==="Escape")closeWorship();
+});
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&$("#worship").classList.contains("open"))closeWorship()});
+
+$("#langSide").outerHTML = langSwitch("langSide"); bindLang("#langSide");
+document.documentElement.lang = lang==="yo"?"yo":"en";
+renderChips(); renderList(); renderReader();
+
+/* Team sharing: hymns stored in the hymnal's shared database */
+(async function init(){
+  const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
+  const [d,u] = await Promise.all([use("db"),use("user")]);
+  if(d){
+    db=d; mode="team";
+    canAdd = u ? await u.canEdit().catch(()=>false) : false;
+    db.collection("hymns").onSnapshot(snap=>{
+      shared = snap.docs.filter(x=>x.exists).map(x=>({...x.data(), id:x.id}));
+      renderChips(); renderList();
+      if(current && !editing){ const c=byId(current.id); if(c){current=c;renderReader();} }
+    },()=>{});
+    db.collection("yoruba").onSnapshot(snap=>{
+      const m={}; snap.docs.forEach(x=>{ if(x.exists) m[x.id]=x.data(); });
+      yoruba=m; renderChips(); renderList();
+      if(current && !editing) renderReader();
+    },()=>{});
+  } else {
+    mode="local"; canAdd=true;
+  }
+  $("#addBtn").hidden=!canAdd;
+  renderBanner(); renderList();
+})();
+
+/* Installable app: offline support and the Install button */
+if("serviceWorker" in navigator && location.protocol==="https:"){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let installEvt=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; $("#installBtn").hidden=false; });
+$("#installBtn").onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(()=>{}); installEvt=null; $("#installBtn").hidden=true; };
+window.addEventListener("appinstalled",()=>{ $("#installBtn").hidden=true; toast("Overcomers Hymnal installed."); });
+</script>
+</body>
+</html>
