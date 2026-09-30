@@ -486,7 +486,8 @@ async function signIn(email, password){
     idToken: data.idToken,
     refreshToken: data.refreshToken,
     expiresAt: Date.now() + (parseInt(data.expiresIn,10) * 1000) - 60000,
-    email: data.email
+    email: data.email,
+    uid: data.localId
   });
 }
 
@@ -508,7 +509,8 @@ async function refreshAuthToken(){
       idToken: data.id_token,
       refreshToken: data.refresh_token,
       expiresAt: Date.now() + (parseInt(data.expires_in,10) * 1000) - 60000,
-      email: auth.email
+      email: auth.email,
+      uid: auth.uid
     });
     return true;
   }catch(e){ return false; }
@@ -527,7 +529,7 @@ function setSyncNote(){
   const el = document.getElementById('editNote');
   if(!el) return;
   if(sharedEnabled && isSignedIn()){
-    el.innerHTML = `Signed in as ${auth.email} · changes save for everyone. <a href="#" id="signOutLink" style="color:var(--wine);">Sign out</a>`;
+    el.innerHTML = `Signed in as ${auth.email} · changes save for everyone. <a href="#" id="signOutLink" style="color:var(--wine);">Sign out</a> · <a href="#" id="manageLink" style="color:var(--wine);">Manage editors</a>`;
     const link = document.getElementById('signOutLink');
     if(link) link.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -537,11 +539,140 @@ function setSyncNote(){
       renderList();
       setSyncNote();
     });
+    const mlink = document.getElementById('manageLink');
+    if(mlink) mlink.addEventListener('click', (e)=>{
+      e.preventDefault();
+      renderManagePanel();
+    });
   } else if(sharedEnabled){
     el.textContent = "Sign in to add, edit, or remove hymns for everyone.";
   } else {
     el.textContent = "Changes here save only on this device.";
   }
+}
+
+function randomPassword(){
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g,'x');
+}
+
+async function renderManagePanel(){
+  const pane = document.getElementById('readingPane');
+  pane.innerHTML = `<div class="form-wrap"><div class="empty-state">Loading editors…</div></div>`;
+  const token = await getValidIdToken();
+  if(!token){
+    pane.innerHTML = `<div class="empty-state">Your sign-in expired. Please sign in again.</div>`;
+    return;
+  }
+  let editors = {};
+  try{
+    const res = await fetch(`${FIREBASE_DB_URL}/hymnal/editors.json?auth=${token}`);
+    editors = (await res.json()) || {};
+  }catch(e){}
+
+  const rows = Object.entries(editors).map(([uid, info])=>`
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);">
+      <span>${(info && info.email) || uid}${uid===auth.uid ? ' (you)' : ''}</span>
+      <button class="icon-btn" data-uid="${uid}" data-act="remove-editor" aria-label="Remove editor" ${Object.keys(editors).length<=1 ? 'disabled title="At least one editor must remain"' : ''}>Remove</button>
+    </div>
+  `).join('') || '<div class="hint">No editors listed yet.</div>';
+
+  pane.innerHTML = `
+    <div class="form-wrap">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-weight:600; font-size:28px; margin:0 0 4px;">Manage editors</h2>
+      <div class="hint" style="margin-bottom:10px;">Anyone on this list can sign in and edit the hymnal.</div>
+      <div id="editors-list">${rows}</div>
+
+      <label for="m-email" style="margin-top:24px;">Add a new editor (by email)</label>
+      <input type="text" id="m-email" placeholder="name@example.com">
+      <div class="hint">They'll get an email to set their own password.</div>
+      <div class="form-actions"><button class="btn-primary" id="m-add" type="button">Add editor</button></div>
+      <div id="m-add-msg" style="font-size:13px; margin-top:8px; display:none;"></div>
+
+      <label for="m-uid" style="margin-top:24px;">Already has an account? Grant access by User UID</label>
+      <input type="text" id="m-uid" placeholder="UID from Firebase Authentication tab">
+      <input type="text" id="m-uid-email" placeholder="their email (for display)" style="margin-top:8px;">
+      <div class="form-actions"><button class="btn-secondary" id="m-uid-add" type="button">Grant access</button></div>
+      <div id="m-uid-msg" style="font-size:13px; margin-top:8px; display:none;"></div>
+
+      <div class="form-actions" style="margin-top:28px;">
+        <button class="btn-secondary" id="m-close" type="button">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('m-close').addEventListener('click', ()=>{
+    pane.innerHTML = '<div class="empty-state">Choose a hymn from the list to read its verses.</div>';
+  });
+
+  pane.querySelectorAll('[data-act="remove-editor"]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const uid = btn.dataset.uid;
+      if(!confirm('Remove this person\'s ability to edit the hymnal?')) return;
+      const t = await getValidIdToken();
+      if(!t) return;
+      await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {method:'DELETE'}).catch(()=>{});
+      renderManagePanel();
+    });
+  });
+
+  document.getElementById('m-add').addEventListener('click', async ()=>{
+    const email = document.getElementById('m-email').value.trim();
+    const msgEl = document.getElementById('m-add-msg');
+    msgEl.style.display = 'block';
+    if(!email){ msgEl.textContent = 'Enter an email address.'; return; }
+    msgEl.textContent = 'Creating account…';
+    try{
+      const password = randomPassword();
+      const signUpRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email, password, returnSecureToken:true})
+      });
+      const signUpData = await signUpRes.json();
+      if(!signUpRes.ok){
+        if(signUpData.error && signUpData.error.message === 'EMAIL_EXISTS'){
+          msgEl.textContent = 'That email already has an account. Ask them for their User UID (Firebase Authentication tab) and use "Grant access by User UID" below instead.';
+        } else {
+          msgEl.textContent = 'Could not create that account.';
+        }
+        return;
+      }
+      const t = await getValidIdToken();
+      await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${signUpData.localId}.json?auth=${t}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email, addedAt: Date.now()})
+      });
+      await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({requestType:'PASSWORD_RESET', email})
+      }).catch(()=>{});
+      msgEl.textContent = `Added ${email} — they'll receive an email to set their password.`;
+      renderManagePanel();
+    }catch(e){
+      msgEl.textContent = 'Something went wrong. Please try again.';
+    }
+  });
+
+  document.getElementById('m-uid-add').addEventListener('click', async ()=>{
+    const uid = document.getElementById('m-uid').value.trim();
+    const email = document.getElementById('m-uid-email').value.trim();
+    const msgEl = document.getElementById('m-uid-msg');
+    msgEl.style.display = 'block';
+    if(!uid){ msgEl.textContent = 'Enter a User UID.'; return; }
+    const t = await getValidIdToken();
+    if(!t){ msgEl.textContent = 'Your sign-in expired.'; return; }
+    await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email: email || null, addedAt: Date.now()})
+    }).catch(()=>{});
+    msgEl.textContent = 'Access granted.';
+    renderManagePanel();
+  });
 }
 
 async function fetchSharedOverrides(){
@@ -585,7 +716,15 @@ async function saveOverrides(){
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(overrides)
-    }).catch(()=>{ /* saved locally at least; will retry to read on next load */ });
+    }).then(res=>{
+      if(!res.ok){
+        alert("This change couldn't be saved for everyone — your editing access may have been removed. It's kept on this device for now.");
+        editMode = false;
+        editBtn.textContent = 'Edit hymnal';
+        renderList();
+        setSyncNote();
+      }
+    }).catch(()=>{ /* offline — saved locally at least; will retry to read on next load */ });
   }
 }
 
