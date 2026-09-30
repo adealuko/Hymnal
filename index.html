@@ -160,7 +160,7 @@ main{display:flex; flex:1; min-height:0; overflow:hidden;}
 
 <script>
 const BASE_HYMNS = [
-{no:1, title:"Amazing Grace", author:"John Newton", year:1779, theme:"Grace",
+{no:1, title:"Amazing Grace", title_yo:"Ore-ofe! B'o Ti Dun To!", author:"John Newton", year:1779, theme:"Grace",
  verses:[
  "Amazing grace, how sweet the sound\nThat saved a wretch like me;\nI once was lost, but now am found,\nWas blind, but now I see.",
  "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed.",
@@ -170,7 +170,7 @@ const BASE_HYMNS = [
  "Ore-ofe! B'o ti dun to!\nO ti gba mi, elese;\nMo ti sonu, mo ti ri i,\nAfoju, mo riran wa.",
  "Ore-ofe mi 'okan mi bere,\nOre-ofe si mu mi la;\nBi 'nu mi ti dun to nigba,\nT'akoko mo gbagbo.",
  "Ewu, ewu ati oko,\nMo ti la ninu won;\nOre-ofe ni mo dupe fun,\nO si mu mi de'le."]},
-{no:2, title:"Holy, Holy, Holy", author:"Reginald Heber", year:1826, theme:"Worship",
+{no:2, title:"Holy, Holy, Holy", title_yo:"Mimo, Mimo, Mimo!", author:"Reginald Heber", year:1826, theme:"Worship",
  verses:[
  "Holy, holy, holy! Lord God Almighty!\nEarly in the morning our song shall rise to Thee;\nHoly, holy, holy, merciful and mighty,\nGod in three Persons, blessed Trinity!",
  "Holy, holy, holy! All the saints adore Thee,\nCasting down their golden crowns around the glassy sea;\nCherubim and seraphim falling down before Thee,\nWhich wert, and art, and evermore shalt be.",
@@ -326,7 +326,7 @@ const BASE_HYMNS = [
  "I need Thee ev'ry hour,\nIn joy or pain;\nCome quickly and abide,\nOr life is vain.",
  "I need Thee ev'ry hour,\nTeach me Thy will;\nAnd Thy rich promises\nIn me fulfill.",
  "I need Thee ev'ry hour,\nMost Holy One;\nO make me Thine indeed,\nThou blessed Son."]},
-{no:30, title:"My Life, My Love, I Give to Thee", author:"Ralph E. Hudson", year:1898, theme:"Consecration",
+{no:30, title:"My Life, My Love, I Give to Thee", title_yo:"Mo F'aye At'Ife Mi Fun", author:"Ralph E. Hudson", year:1898, theme:"Consecration",
  chorus:"I'll live for Him who died for me,\nHow happy then my life shall be!\nI'll live for Him who died for me,\nMy Savior and my God!",
  verses:[
  "My life, my love, I give to Thee,\nThou Lamb of God who died for me;\nOh, may I ever faithful be,\nMy Savior and my God!",
@@ -780,10 +780,11 @@ function renderList(){
   filtered.forEach(h=>{
     const item = document.createElement('div');
     item.className = 'hymn-item' + (h.no===selectedNo ? ' selected' : '');
+    const showYoTitle = language==='yo' && h.verses_yo && h.verses_yo.length && h.title_yo;
     item.innerHTML = `
       <span class="hymn-no">${h.no}</span>
       <span style="flex:1;">
-        <span class="hymn-item-title">${h.title}</span>
+        <span class="hymn-item-title">${showYoTitle ? h.title_yo : h.title}</span>
         <span class="hymn-item-theme">${h.theme}${h.year ? ' · ' + h.year : ''}${h.copyrighted ? ' · words licensed' : ''}${h.verses_yo ? ' · Yorùbá available' : ''}</span>
       </span>
       ${editMode ? `<button class="icon-btn" data-act="edit" aria-label="Edit hymn">✎</button>
@@ -857,6 +858,9 @@ function renderForm(existing){
         <label for="f-verses-yo">Verses (Yorùbá, optional)</label>
         <textarea id="f-verses-yo">${versesYoText}</textarea>
         <div class="hint">Separate each verse with a blank line. Leave blank if you don't have this one yet.</div>
+        <label for="f-title-yo">Title (Yorùbá, optional)</label>
+        <input type="text" id="f-title-yo" value="${(h.title_yo||'').replace(/"/g,'&quot;')}">
+        <div class="hint">Shown instead of the English title when someone switches to Yorùbá.</div>
       </div>
       <div class="form-actions">
         <button class="btn-primary" id="f-save" type="button">Save</button>
@@ -896,6 +900,8 @@ function renderForm(existing){
       const versesYo = document.getElementById('f-verses-yo').value
         .split(/\n\s*\n/).map(v=>v.trim()).filter(Boolean);
       if(versesYo.length) newHymn.verses_yo = versesYo;
+      const titleYo = document.getElementById('f-title-yo').value.trim();
+      if(titleYo) newHymn.title_yo = titleYo;
     }
     if(existing){
       const isBase = BASE_HYMNS.some(b=>b.no===existing.no);
@@ -913,6 +919,10 @@ function renderForm(existing){
 
 function renderReading(h){
   const pane = document.getElementById('readingPane');
+  const wantYo = language === 'yo';
+  const hasYo = !!(h.verses_yo && h.verses_yo.length);
+  const useYo = wantYo && hasYo;
+  const displayTitle = (useYo && h.title_yo) ? h.title_yo : h.title;
   let bodyHtml;
   if(h.copyrighted){
     bodyHtml = `<div class="empty-state" style="margin-top:10px;">
@@ -920,9 +930,6 @@ function renderReading(h){
       If you have a licensed copy or CCLI account, keep it alongside this one for your gathering.
     </div>`;
   } else {
-    const wantYo = language === 'yo';
-    const hasYo = !!(h.verses_yo && h.verses_yo.length);
-    const useYo = wantYo && hasYo;
     const verses = useYo ? h.verses_yo : h.verses;
     const chorus = useYo ? h.chorus_yo : h.chorus;
     const notice = (wantYo && !hasYo)
@@ -941,8 +948,8 @@ function renderReading(h){
   pane.innerHTML = `
     <div class="hymn-header">
       <div class="no">No. ${h.no} · ${h.theme}</div>
-      <h2>${h.title}</h2>
-      <div class="hymn-meta">${h.author}${h.year ? ', ' + h.year : ''}</div>
+      <h2>${displayTitle}</h2>
+      <div class="hymn-meta">${h.author}${h.year ? ', ' + h.year : ''}${useYo && h.title_yo ? ' · ' + h.title : ''}</div>
     </div>
     ${bodyHtml}
   `;
