@@ -456,15 +456,92 @@ try{
 
 const FIREBASE_DB_URL = 'https://overcomers-hymnal-default-rtdb.firebaseio.com';
 const FIREBASE_PATH = 'hymnal/overrides';
+const FIREBASE_API_KEY = 'AIzaSyB-y34i91PY0ABT-lXjryPh4S6DITOnkLI';
 let sharedEnabled = !!FIREBASE_DB_URL;
 let lastSyncedJSON = JSON.stringify(overrides);
+
+let auth = null;
+try{ auth = JSON.parse(sessionStorage.getItem('hymnal-auth') || 'null'); }catch(e){}
+
+function saveAuth(a){
+  auth = a;
+  try{
+    if(a) sessionStorage.setItem('hymnal-auth', JSON.stringify(a));
+    else sessionStorage.removeItem('hymnal-auth');
+  }catch(e){}
+}
+
+async function signIn(email, password){
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password, returnSecureToken:true})
+  });
+  const data = await res.json();
+  if(!res.ok){
+    const msg = (data.error && data.error.message) || 'Sign-in failed';
+    throw new Error(msg);
+  }
+  saveAuth({
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Date.now() + (parseInt(data.expiresIn,10) * 1000) - 60000,
+    email: data.email
+  });
+}
+
+function signOut(){
+  saveAuth(null);
+}
+
+async function refreshAuthToken(){
+  if(!auth || !auth.refreshToken) return false;
+  try{
+    const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(auth.refreshToken)}`
+    });
+    const data = await res.json();
+    if(!res.ok) return false;
+    saveAuth({
+      idToken: data.id_token,
+      refreshToken: data.refresh_token,
+      expiresAt: Date.now() + (parseInt(data.expires_in,10) * 1000) - 60000,
+      email: auth.email
+    });
+    return true;
+  }catch(e){ return false; }
+}
+
+async function getValidIdToken(){
+  if(!auth) return null;
+  if(auth.expiresAt > Date.now()) return auth.idToken;
+  const ok = await refreshAuthToken();
+  return ok ? auth.idToken : null;
+}
+
+function isSignedIn(){ return !!auth; }
 
 function setSyncNote(){
   const el = document.getElementById('editNote');
   if(!el) return;
-  el.textContent = sharedEnabled
-    ? "Changes here are saved for everyone who opens this app."
-    : "Changes here save only on this device. To add a hymn for everyone, send the words to whoever maintains this app.";
+  if(sharedEnabled && isSignedIn()){
+    el.innerHTML = `Signed in as ${auth.email} · changes save for everyone. <a href="#" id="signOutLink" style="color:var(--wine);">Sign out</a>`;
+    const link = document.getElementById('signOutLink');
+    if(link) link.addEventListener('click', (e)=>{
+      e.preventDefault();
+      signOut();
+      editMode = false;
+      editBtn.textContent = 'Edit hymnal';
+      renderList();
+      setSyncNote();
+    });
+  } else if(sharedEnabled){
+    el.textContent = "Sign in to add, edit, or remove hymns for everyone.";
+  } else {
+    el.textContent = "Changes here save only on this device.";
+  }
 }
 
 async function fetchSharedOverrides(){
@@ -491,11 +568,20 @@ async function fetchSharedOverrides(){
   }catch(e){ /* offline or unreachable — keep using what we have */ }
 }
 
-function saveOverrides(){
+async function saveOverrides(){
   try{ localStorage.setItem('hymnal-overrides', JSON.stringify(overrides)); }catch(e){}
   lastSyncedJSON = JSON.stringify(overrides);
   if(sharedEnabled){
-    fetch(`${FIREBASE_DB_URL}/${FIREBASE_PATH}.json`, {
+    const token = await getValidIdToken();
+    if(!token){
+      alert("Your sign-in has expired. Your change was saved on this device — please sign in again to share it.");
+      editMode = false;
+      editBtn.textContent = 'Edit hymnal';
+      renderList();
+      setSyncNote();
+      return;
+    }
+    fetch(`${FIREBASE_DB_URL}/${FIREBASE_PATH}.json?auth=${token}`, {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(overrides)
@@ -743,10 +829,59 @@ langBtn.addEventListener('click', ()=>{
 
 const editBtn = document.getElementById('editBtn');
 editBtn.addEventListener('click', ()=>{
+  if(!editMode && sharedEnabled && !isSignedIn()){
+    renderLoginForm();
+    return;
+  }
   editMode = !editMode;
   editBtn.textContent = editMode ? 'Done editing' : 'Edit hymnal';
   renderList();
+  setSyncNote();
 });
+
+function renderLoginForm(){
+  const pane = document.getElementById('readingPane');
+  pane.innerHTML = `
+    <div class="form-wrap">
+      <h2 style="font-family:'Cormorant Garamond',serif; font-weight:600; font-size:28px; margin:0 0 4px;">Sign in to edit</h2>
+      <div class="hint" style="margin-bottom:6px;">Only authorized editors can add, change, or remove hymns.</div>
+      <label for="l-email">Email</label>
+      <input type="text" id="l-email" autocomplete="username">
+      <label for="l-password">Password</label>
+      <input type="text" id="l-password" style="-webkit-text-security:disc; text-security:disc;" autocomplete="current-password">
+      <div id="l-error" style="color:var(--wine); font-size:13px; margin-top:10px; display:none;"></div>
+      <div class="form-actions">
+        <button class="btn-primary" id="l-submit" type="button">Sign in</button>
+        <button class="btn-secondary" id="l-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('l-password').setAttribute('type','password');
+  document.getElementById('l-cancel').addEventListener('click', ()=>{
+    pane.innerHTML = '<div class="empty-state">Choose a hymn from the list to read its verses.</div>';
+  });
+  document.getElementById('l-submit').addEventListener('click', async ()=>{
+    const email = document.getElementById('l-email').value.trim();
+    const password = document.getElementById('l-password').value;
+    const errEl = document.getElementById('l-error');
+    const btn = document.getElementById('l-submit');
+    errEl.style.display = 'none';
+    if(!email || !password){ errEl.textContent = 'Enter your email and password.'; errEl.style.display = 'block'; return; }
+    btn.textContent = 'Signing in…';
+    try{
+      await signIn(email, password);
+      editMode = true;
+      editBtn.textContent = 'Done editing';
+      pane.innerHTML = '<div class="empty-state">Choose a hymn from the list to read its verses.</div>';
+      renderList();
+      setSyncNote();
+    }catch(e){
+      errEl.textContent = 'Could not sign in — check your email and password.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Sign in';
+    }
+  });
+}
 
 const themeBtn = document.getElementById('themeBtn');
 function currentMode(){
