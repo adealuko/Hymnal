@@ -122,7 +122,8 @@ main{display:flex; flex:1; min-height:0; overflow:hidden;}
 .chorus .verse-num{visibility:hidden;}
 @media (max-width:760px){
   main{flex-direction:column; overflow:auto;}
-  .list-pane{width:100%; border-right:none; border-bottom:1px solid var(--line); max-height:46vh;}
+  .list-pane{width:100%; border-right:none; border-bottom:1px solid var(--line); max-height:46vh; transition:max-height 0.25s ease;}
+  .list-pane.collapsed{max-height:0; border-bottom:none; overflow:hidden;}
   .reading-pane{padding:24px 18px 60px; scroll-margin-top:env(safe-area-inset-top,0px);}
   header{padding:16px 16px 14px; gap:10px;}
   header > div[style*="display:flex"]{width:100%; justify-content:flex-start;}
@@ -822,10 +823,23 @@ function renderCategoriesPanel(allThemes){
   });
 }
 
+function applyMobileLayout(){
+  const listPane = document.querySelector('.list-pane');
+  if(!listPane) return;
+  const isMobile = window.matchMedia('(max-width:760px)').matches;
+  if(isMobile && selectedNo!==null){
+    listPane.classList.add('collapsed');
+  } else {
+    listPane.classList.remove('collapsed');
+  }
+}
+window.addEventListener('resize', applyMobileLayout);
+
 function renderList(){
   renderFilters();
   document.getElementById('addBtn').style.display = editMode ? 'block' : 'none';
   document.getElementById('editNote').style.display = editMode ? 'block' : 'none';
+  applyMobileLayout();
   const q = document.getElementById('search').value.trim().toLowerCase();
   const list = document.getElementById('hymnList');
   list.innerHTML = '';
@@ -869,6 +883,9 @@ function renderList(){
       selectedNo = h.no;
       renderList();
       renderReading(h);
+      if(window.matchMedia('(max-width:760px)').matches){
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
     });
     list.appendChild(item);
   });
@@ -1022,11 +1039,11 @@ function renderReading(h){
   pane.scrollTop = 0;
   const backBtn = document.getElementById('backToList');
   if(backBtn) backBtn.addEventListener('click', ()=>{
-    document.querySelector('.list-pane').scrollIntoView({behavior:'smooth', block:'start'});
+    selectedNo = null;
+    pane.innerHTML = '<div class="empty-state">Choose a hymn from the list to read its verses.</div>';
+    renderList();
+    window.scrollTo({top:0, behavior:'smooth'});
   });
-  if(window.matchMedia('(max-width:760px)').matches){
-    pane.scrollIntoView({behavior:'smooth', block:'start'});
-  }
 }
 
 document.getElementById('search').addEventListener('input', renderList);
