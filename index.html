@@ -582,10 +582,27 @@ async function renderManagePanel(){
     return;
   }
   let editors = {};
+  let loadError = null;
   try{
     const res = await fetch(`${FIREBASE_DB_URL}/hymnal/editors.json?auth=${token}`);
-    editors = (await res.json()) || {};
-  }catch(e){}
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      loadError = `Could not load the editors list (${(err.error)||res.status}). Check that your own account is listed under hymnal/editors in the Firebase console, and that your database Rules are published.`;
+    } else {
+      editors = (await res.json()) || {};
+    }
+  }catch(e){
+    loadError = 'Could not reach the database. Check your connection and try again.';
+  }
+
+  if(loadError){
+    pane.innerHTML = `<div class="form-wrap"><div class="empty-state" style="text-align:left;">${loadError}</div>
+      <div class="form-actions" style="margin-top:20px;"><button class="btn-secondary" id="m-close-err" type="button">Close</button></div></div>`;
+    document.getElementById('m-close-err').addEventListener('click', ()=>{
+      pane.innerHTML = '<div class="empty-state">Choose a hymn from the list to read its verses.</div>';
+    });
+    return;
+  }
 
   const rows = Object.entries(editors).map(([uid, info])=>`
     <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);">
@@ -628,7 +645,11 @@ async function renderManagePanel(){
       if(!confirm('Remove this person\'s ability to edit the hymnal?')) return;
       const t = await getValidIdToken();
       if(!t) return;
-      await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {method:'DELETE'}).catch(()=>{});
+      const res = await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {method:'DELETE'}).catch(()=>null);
+      if(!res || !res.ok){
+        alert('Could not remove that editor — check that your own account is listed under hymnal/editors in the Firebase console.');
+        return;
+      }
       renderManagePanel();
     });
   });
@@ -656,11 +677,16 @@ async function renderManagePanel(){
         return;
       }
       const t = await getValidIdToken();
-      await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${signUpData.localId}.json?auth=${t}`, {
+      const putRes = await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${signUpData.localId}.json?auth=${t}`, {
         method: 'PUT',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({email, addedAt: Date.now()})
       });
+      if(!putRes.ok){
+        const putErr = await putRes.json().catch(()=>({}));
+        msgEl.textContent = `Account was created, but saving them as an editor failed (${(putErr.error)||putRes.status}). This usually means YOUR OWN account isn't yet listed under hymnal/editors in the Firebase console — check that first.`;
+        return;
+      }
       await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -681,11 +707,16 @@ async function renderManagePanel(){
     if(!uid){ msgEl.textContent = 'Enter a User UID.'; return; }
     const t = await getValidIdToken();
     if(!t){ msgEl.textContent = 'Your sign-in expired.'; return; }
-    await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {
+    const res = await fetch(`${FIREBASE_DB_URL}/hymnal/editors/${uid}.json?auth=${t}`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({email: email || null, addedAt: Date.now()})
-    }).catch(()=>{});
+    }).catch(()=>null);
+    if(!res || !res.ok){
+      const err = res ? await res.json().catch(()=>({})) : {};
+      msgEl.textContent = `Could not grant access (${(err.error)||(res?res.status:'network error')}). Check that YOUR OWN account is listed under hymnal/editors in the Firebase console.`;
+      return;
+    }
     msgEl.textContent = 'Access granted.';
     renderManagePanel();
   });
